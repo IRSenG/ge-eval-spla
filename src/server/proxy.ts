@@ -155,7 +155,7 @@ export function createProxyRouter(config: Config, refreshTokenStore?: RefreshTok
   const authMiddleware = createAuthenticateMiddleware(config, refreshTokenStore);
 
   // Apply auth middleware to protect these proxy endpoints
-  router.use('/api/v1/*', authMiddleware);
+  router.use('/api/v1', authMiddleware);
 
   // 1. POST /api/v1/assist (Discovery Engine streamAssist proxy)
   router.post('/api/v1/assist', async (req: Request, res: Response) => {

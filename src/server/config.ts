@@ -22,33 +22,33 @@ import { z } from 'zod';
 
 import {logger} from './logger';
 
-const GoogleIdentitySchema = z.object({
+const GoogleIdentitySchema = z.looseObject({
   id: z.string(),
   type: z.literal('google_identity'),
   display_name: z.string(),
   client_id: z.string(),
   client_secret_secret: z.string(),
-}).passthrough();
+});
 
-const SamlSchema = z.object({
+const SamlSchema = z.looseObject({
   id: z.string(),
   type: z.literal('3p_saml'),
   display_name: z.string(),
-  idp_sso_url: z.string().url(),
+  idp_sso_url: z.url(),
   gcp_pool_id: z.string(),
   gcp_provider_id: z.string(),
-}).passthrough();
+});
 
-const OidcSchema = z.object({
+const OidcSchema = z.looseObject({
   id: z.string(),
   type: z.literal('3p_oidc'),
   display_name: z.string(),
-  idp_issuer_url: z.string().url(),
+  idp_issuer_url: z.url(),
   client_id: z.string(),
   client_secret_secret: z.string(),
   gcp_pool_id: z.string(),
   gcp_provider_id: z.string(),
-}).passthrough();
+});
 
 const AuthProviderSchema = z.discriminatedUnion('type', [
   GoogleIdentitySchema,
@@ -56,23 +56,23 @@ const AuthProviderSchema = z.discriminatedUnion('type', [
   OidcSchema,
 ]);
 
-const FirestoreConfigSchema = z.object({
+const FirestoreConfigSchema = z.looseObject({
   projectId: z.string(),
   databaseId: z.string(),
   collectionId: z.string(),
   ttlSeconds: z.number().optional(),
-}).passthrough();
+});
 
-export const SessionConfigSchema = z.object({
+export const SessionConfigSchema = z.looseObject({
   encryption_key_secret: z.string(),
-}).passthrough();
+});
 
-export const ConfigSchema = z.object({
+export const ConfigSchema = z.looseObject({
   session_config: SessionConfigSchema,
   auth_providers: z.array(AuthProviderSchema),
   firestore_config: FirestoreConfigSchema.optional(),
   trusted_hosts: z.array(z.string()).optional(),
-}).passthrough();
+});
 
 export type SessionConfig = z.infer<typeof SessionConfigSchema>;
 export type FirestoreConfig = z.infer<typeof FirestoreConfigSchema>;

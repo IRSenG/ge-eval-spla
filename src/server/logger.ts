@@ -20,12 +20,15 @@ import * as winston from 'winston';
  * Winston logger instance configured to output to the console.
  * Used for server-side logging across the application.
  */
-export const logger: winston.Logger = new winston.Logger({
-  transports: [
-    new winston.transports.Console({
-      level: 'info',
-      colorize: true,
-      timestamp: true,
+export const logger: winston.Logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.colorize(),
+    winston.format.printf(({timestamp, level, message, ...meta}) => {
+      const extra = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+      return `${timestamp} - ${level}: ${message}${extra}`;
     }),
-  ],
+  ),
+  transports: [new winston.transports.Console()],
 });

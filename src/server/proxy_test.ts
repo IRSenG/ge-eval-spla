@@ -33,6 +33,24 @@ describe('proxy module', () => {
     return route!.route!.stack[0];
   }
 
+  function headersContaining(expected: Record<string, string>) {
+    return {
+      asymmetricMatch(actual: unknown): boolean {
+        if (!actual || typeof actual !== 'object') {
+          return false;
+        }
+        const headers = actual instanceof Headers
+          ? actual
+          : new Headers(actual as Record<string, string>);
+        return Object.entries(expected).every(
+            ([key, value]) => headers.get(key) === value);
+      },
+      jasmineToString(): string {
+        return `<headersContaining(${JSON.stringify(expected)})>`;
+      },
+    };
+  }
+
   function stubOAuthRequest(responseData: unknown) {
     const requestSpy =
         jasmine.createSpy('request').and.resolveTo({data: responseData});
@@ -294,7 +312,7 @@ describe('proxy module', () => {
             'https://aiplatform.googleapis.com/v1/projects/my-project/locations/global/publishers/google/models/gemini-3.5-flash:generateContent',
         method: 'POST',
         data: {contents: [{role: 'user', parts: [{text: 'Rate this'}]}]},
-        headers: jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+        headers: headersContaining({'x-goog-user-project': 'my-project'}),
       }));
       expect(jsonSpy).toHaveBeenCalledTimes(1);
       expect(jsonSpy).toHaveBeenCalledWith(scorePayload);
@@ -325,7 +343,7 @@ describe('proxy module', () => {
                'https://aiplatform.eu.rep.googleapis.com/v1/projects/my-project/locations/eu/publishers/google/models/gemini-3.5-flash:generateContent',
            method: 'POST',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(scorePayload);
@@ -356,7 +374,7 @@ describe('proxy module', () => {
                'https://aiplatform.us.rep.googleapis.com/v1/projects/my-project/locations/us/publishers/google/models/gemini-3.5-flash:generateContent',
            method: 'POST',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(scorePayload);
@@ -387,7 +405,7 @@ describe('proxy module', () => {
                'https://europe-west4-aiplatform.googleapis.com/v1/projects/my-project/locations/europe-west4/publishers/google/models/gemini-3.5-flash:generateContent',
            method: 'POST',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(scorePayload);
@@ -445,7 +463,7 @@ describe('proxy module', () => {
                'https://eu-discoveryengine.googleapis.com/v1alpha/projects/my-project/locations/eu/collections/default_collection/engines',
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(enginesPayload);
@@ -473,7 +491,7 @@ describe('proxy module', () => {
                'https://discoveryengine.googleapis.com/v1alpha/projects/my-project/locations/global/collections/default_collection/engines',
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(enginesPayload);
@@ -501,7 +519,7 @@ describe('proxy module', () => {
                'https://us-discoveryengine.googleapis.com/v1alpha/projects/my-project/locations/us/collections/default_collection/engines',
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(enginesPayload);
@@ -529,7 +547,7 @@ describe('proxy module', () => {
                'https://europe-west4-discoveryengine.googleapis.com/v1alpha/projects/my-project/locations/europe-west4/collections/default_collection/engines',
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(enginesPayload);
@@ -564,7 +582,7 @@ describe('proxy module', () => {
                'https://eu-discoveryengine.googleapis.com/v1alpha/projects/my-project/locations/eu/collections/default_collection/engines/my-engine/widgetConfigs/default_search_widget_config',
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(widgetPayload);
@@ -599,7 +617,7 @@ describe('proxy module', () => {
                `https://eu-discoveryengine.googleapis.com/v1alpha/${enginePath}/widgetConfigs/default_search_widget_config`,
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(widgetPayload);
@@ -632,7 +650,7 @@ describe('proxy module', () => {
                'https://discoveryengine.googleapis.com/v1alpha/projects/my-project/locations/global/collections/default_collection/engines/my-engine/widgetConfigs/default_search_widget_config',
            method: 'GET',
            headers:
-               jasmine.objectContaining({'x-goog-user-project': 'my-project'}),
+               headersContaining({'x-goog-user-project': 'my-project'}),
          }));
          expect(jsonSpy).toHaveBeenCalledTimes(1);
          expect(jsonSpy).toHaveBeenCalledWith(widgetPayload);

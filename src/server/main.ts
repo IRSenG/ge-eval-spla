@@ -83,8 +83,8 @@ async function startServer() {
   }
 
   // Register common middlewares
-  app.use((express as unknown as { json: (options?: unknown) => express.RequestHandler }).json());
-  app.use((express as unknown as { urlencoded: (options?: unknown) => express.RequestHandler }).urlencoded({ extended: true }));
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   app.use(cookieParserMiddleware);
 
   // Health check endpoint for Hexa
@@ -123,7 +123,7 @@ async function startServer() {
     app.use(express.static(staticPath));
 
     // Catch-all route for Angular client-side SPA routing
-    app.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    app.get('/{*splat}', (req: express.Request, res: express.Response, next: express.NextFunction) => {
       if (
         req.path === '/api' || req.path.startsWith('/api/') ||
         req.path === '/auth' || req.path.startsWith('/auth/')
