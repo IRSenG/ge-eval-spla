@@ -3,15 +3,13 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
     "outDir": "./dist/server",
     "rootDir": "src/server",
     "types": ["node"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true
-  },
-  "ts-node": {
-    "esm": false
   },
   "include": [
     "src/server/**/*.ts"

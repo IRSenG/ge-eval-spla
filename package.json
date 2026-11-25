@@ -2,6 +2,9 @@
   "name": "gemini-enterprise-eval-studio",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
   "scripts": {
     "ng": "ng",
     "start:no-auth": "ng serve",
@@ -15,28 +18,25 @@
     "test": "npm run test:frontend && npm run test:server"
   },
   "dependencies": {
-    "@angular/animations": "^20.3.25",
-    "@angular/common": "^20.3.25",
-    "@angular/compiler": "^20.3.25",
-    "@angular/core": "^20.3.25",
-    "@angular/forms": "^20.3.25",
-    "@angular/platform-browser": "^20.3.25",
-    "@angular/platform-browser-dynamic": "^20.3.25",
-    "@angular/router": "^20.3.25",
+    "@angular/common": "^22.3.0",
+    "@angular/compiler": "^22.3.0",
+    "@angular/core": "^22.3.0",
+    "@angular/forms": "^22.3.0",
+    "@angular/platform-browser": "^22.3.0",
     "express": "^5.3.0",
     "google-auth-library": "^11.3.4",
     "googleapis": "^190.0.0",
     "papaparse": "^5.7.1",
     "rxjs": "^7.8.2",
-    "tslib": "^2.8.1",
+    "tslib": "^2.9.1",
     "winston": "^3.19.0",
     "zod": "^4.6.7",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.16.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^20.3.25",
-    "@angular/cli": "^20.3.25",
-    "@angular/compiler-cli": "^20.3.25",
+    "@angular/build": "^22.3.0",
+    "@angular/cli": "^22.3.0",
+    "@angular/compiler-cli": "^22.3.0",
     "@types/express": "^5.0.6",
     "@types/jasmine": "^5.1.0",
     "@types/node": "^24.0.0",
@@ -44,23 +44,9 @@
     "@types/trusted-types": "^2.0.7",
     "concurrently": "^10.0.7",
     "jasmine": "^5.1.0",
-    "jsdom": "^29.1.1",
+    "jsdom": "^31.0.1",
     "tsx": "^4.23.15",
-    "typescript": "~5.8.0",
-    "vitest": "^3.2.6"
-  },
-  "overrides": {
-    "@babel/core": "^7.29.6",
-    "esbuild": "^0.28.1",
-    "http-proxy-middleware": "^3.0.7",
-    "js-yaml": "^4.2.0",
-    "launch-editor": "^2.14.1",
-    "piscina": "^5.2.0",
-    "serialize-javascript": "7.0.5",
-    "tar": "^7.5.16",
-    "uuid": "11.1.1",
-    "vite": "^7.3.4",
-    "webpack-dev-server": "^5.2.5",
-    "ws": "^8.21.0"
+    "typescript": "~6.0.0",
+    "vitest": "^5.1.2"
   }
 }
