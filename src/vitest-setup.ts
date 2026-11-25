@@ -19,6 +19,48 @@ import 'zone.js/testing';
 
 import {expect, vi} from 'vitest';
 
+// --- Part 0: Defensive localStorage Polyfill for Node 25/26 + jsdom ---
+// Node 26 defines globalThis.localStorage as an experimental getter returning
+// undefined when --localstorage-file is not provided, preventing jsdom from
+// exposing a working Storage implementation.
+if (typeof globalThis !== 'undefined' &&
+    (typeof globalThis.localStorage === 'undefined' ||
+     typeof globalThis.localStorage?.getItem !== 'function')) {
+  const store = new Map<string, string>();
+  const memoryStorage: Storage = {
+    get length() {
+      return store.size;
+    },
+    clear() {
+      store.clear();
+    },
+    getItem(key: string) {
+      return store.has(key) ? store.get(key)! : null;
+    },
+    key(index: number) {
+      return Array.from(store.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      store.delete(key);
+    },
+    setItem(key: string, value: string) {
+      store.set(String(key), String(value));
+    },
+  };
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: memoryStorage,
+    configurable: true,
+    writable: true,
+  });
+  if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'localStorage', {
+      value: memoryStorage,
+      configurable: true,
+      writable: true,
+    });
+  }
+}
+
 // --- Part 1: Zone.js Vitest Patch ---
 
 const DESCRIBE_FACTORY_NAMES = [
