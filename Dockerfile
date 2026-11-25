@@ -3,7 +3,7 @@ FROM node:24-slim AS builder
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npm run build:auth
@@ -13,7 +13,7 @@ FROM node:24-slim
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config.json* ./
