@@ -16,20 +16,23 @@
 
 import {CommonModule} from '@angular/common';
 import {Component} from '@angular/core';
-import {Observable} from 'rxjs';
+import {combineLatest, Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 
+import {I18nService} from '../../i18n/i18n.service';
+import {TranslatePipe} from '../../i18n/translate.pipe';
+import {Language} from '../../i18n/translations';
 import {AuthService} from '../../services/auth.service';
 import {StateService} from '../../services/state.service';
 
 /**
  * Component for the application header.
- * It displays the title based on the current active tab.
+ * It displays the title based on the current active tab and a language switcher.
  */
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './header.component.html'
 })
 export class HeaderComponent {
@@ -38,9 +41,18 @@ export class HeaderComponent {
 
   constructor(
       public readonly stateService: StateService,
-      public readonly authService: AuthService
+      public readonly authService: AuthService,
+      public readonly i18n: I18nService
   ) {
-    this.tabTitle$ = this.stateService.currentTab$.pipe(map(tab => this.getTabTitle(tab)));
+    this.tabTitle$ = combineLatest([
+      this.stateService.currentTab$,
+      this.i18n.language$,
+    ]).pipe(map(([tab]) => this.getTabTitle(tab)));
+  }
+
+  onLanguageChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.i18n.setLanguage(select.value as Language);
   }
 
   logout() {
@@ -53,15 +65,15 @@ export class HeaderComponent {
   private getTabTitle(tab: string|null) {
     switch (tab) {
       case 'run':
-        return 'Run Evaluation';
+        return this.i18n.t('nav.runEvaluation');
       case 'compare':
-        return 'Compare Evals';
+        return this.i18n.t('nav.compareEvals');
       case 'queries':
-        return 'Run Queries';
+        return this.i18n.t('nav.runQueries');
       case 'about':
-        return 'About Eval Studio';
+        return this.i18n.t('nav.aboutTitle');
       default:
-        return 'Eval Studio';
+        return this.i18n.t('nav.defaultTitle');
     }
   }
 }

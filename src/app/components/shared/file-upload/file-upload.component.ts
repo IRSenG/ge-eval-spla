@@ -17,6 +17,8 @@
 import {CommonModule} from '@angular/common';
 import {ChangeDetectorRef, Component, EventEmitter, Input, Output} from '@angular/core';
 
+import {I18nService} from '../../../i18n/i18n.service';
+import {TranslatePipe} from '../../../i18n/translate.pipe';
 import {CsvService} from '../../../services/csv.service';
 
 /**
@@ -26,7 +28,7 @@ import {CsvService} from '../../../services/csv.service';
 @Component({
   selector: 'app-file-upload',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './file-upload.component.html'
 })
 export class FileUploadComponent {
@@ -44,7 +46,11 @@ export class FileUploadComponent {
   uploadError = '';
   isParsing = false;
 
-  constructor(private csvService: CsvService, private cdr: ChangeDetectorRef) {}
+  constructor(
+      private csvService: CsvService,
+      private cdr: ChangeDetectorRef,
+      private readonly i18n: I18nService
+  ) {}
 
   /** Prevents default drag behavior to allow drop. */
   onDragOver(event: DragEvent) {
@@ -78,7 +84,7 @@ export class FileUploadComponent {
    */
   handleFile(file: File) {
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      this.uploadError = 'Please upload a valid CSV file.';
+      this.uploadError = this.i18n.t('upload.errInvalidCsv');
       this.file = null;
       this.fileChange.emit(null);
       this.csvRows = [];
@@ -109,7 +115,10 @@ export class FileUploadComponent {
         const lowerCaseRequiredColumns = this.requiredColumns.map(col => col.toLowerCase());
         const missingColumns = lowerCaseRequiredColumns.filter(col => !headers.includes(col));
         if (missingColumns.length > 0) {
-          this.uploadError = `CSV must contain columns: ${this.requiredColumns.join(', ')}. Missing: ${missingColumns.join(', ')}`;
+          this.uploadError = this.i18n.t('upload.errMissingColumns', {
+            required: this.requiredColumns.join(', '),
+            missing: missingColumns.join(', '),
+          });
           this.file = null;
           this.fileChange.emit(null);
           this.csvRows = [];
@@ -118,7 +127,7 @@ export class FileUploadComponent {
           this.csvRowsChange.emit(this.csvRows);
         }
       } else {
-        this.uploadError = 'CSV file is empty or contains no data rows.';
+        this.uploadError = this.i18n.t('upload.errEmptyCsv');
         this.file = null;
         this.fileChange.emit(null);
         this.csvRows = [];

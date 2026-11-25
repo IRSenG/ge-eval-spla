@@ -10,7 +10,7 @@
       <app-header></app-header>
 
       <!-- Content Area -->
-      <main class="flex-1 overflow-auto p-6 bg-gray-50 [scrollbar-gutter:stable]" tabindex="0" aria-label="Main content">
+      <main class="flex-1 overflow-auto p-6 bg-gray-50 [scrollbar-gutter:stable]" tabindex="0" [attr.aria-label]="'app.mainContentAria' | t">
         <app-run-queries [hidden]="currentTab !== 'queries'"></app-run-queries>
         <app-run-evaluation [hidden]="currentTab !== 'run'"></app-run-evaluation>
         <app-compare-evals [hidden]="currentTab !== 'compare'"></app-compare-evals>
@@ -22,14 +22,14 @@
   <!-- Unauthenticated view -->
   <main *ngIf="!isAuthenticated" class="flex items-center justify-center h-screen bg-gray-100">
     <div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-      <h1 class="text-2xl font-bold mb-6 text-gray-800">Sign in to Eval Studio</h1>
+      <h1 class="text-2xl font-bold mb-6 text-gray-800">{{ 'app.signInTitle' | t }}</h1>
       <!-- Loading state -->
       <div *ngIf="isLoadingProviders" class="text-gray-500 py-4 flex items-center justify-center space-x-2">
         <svg class="animate-spin h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <span>Loading sign-in options...</span>
+        <span>{{ 'app.loadingSignIn' | t }}</span>
       </div>
 
       <!-- Loaded state -->
@@ -43,7 +43,7 @@
           </div>
         </div>
         <ng-template #noProviders>
-          <p class="text-red-600">No authentication providers configured. Check server configuration.</p>
+          <p class="text-red-600">{{ 'app.noProviders' | t }}</p>
         </ng-template>
       </div>
     </div>

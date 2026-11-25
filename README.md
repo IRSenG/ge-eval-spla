@@ -1,194 +1,146 @@
-# Gemini Enterprise Eval Studio
+# Gemini Enterprise Eval Studio (Edición LATAM — `ge-eval-spla`)
 
 <div align="center">
   <img src="src/assets/logo.svg" alt="Gemini Enterprise Eval Studio Lockup" />
 </div>
 
-## Overview
+> **Soporte multilingüe (ES-LATAM / PT-BR / EN):** Esta edición está basada en [GoogleCloudPlatform/gemini-enterprise-eval-studio](https://github.com/GoogleCloudPlatform/gemini-enterprise-eval-studio) e incorpora internacionalización ligera en tiempo de ejecución con **Español Latinoamericano (`es`) por defecto**, además de **Portugués de Brasil (`pt-BR`)** e **Inglés (`en`)** seleccionables desde el encabezado superior.
 
-Gemini Enterprise Eval Studio is an evaluation framework designed to execute
-stateless API calls against Gemini Enterprise for E2E evaluation.
-It enables customers to run batch evaluations, compare baselines, measure
-streaming latency metrics (TTFT, TTFA, TTLT, Grounding Latency, Tool Execution
-Latency), and define custom metrics using auto-grader rubrics or programmatic
-evaluators.
+## Descripción general
 
-## Motivation
+Gemini Enterprise Eval Studio es un framework de evaluación diseñado para ejecutar llamadas stateless a las APIs de Gemini Enterprise con el objetivo de realizar evaluaciones de extremo a extremo (E2E).
+Permite a los equipos ejecutar evaluaciones por lotes, comparar resultados contra un *baseline*, medir métricas de latencia de streaming (`TTFT`, `TTFA`, `TTLT`, latencia de grounding y ejecución de herramientas) y definir métricas personalizadas mediante rúbricas de *Auto Rater* (LLM-as-a-Judge) o evaluadores programáticos.
 
-Quality assurance is a major friction point for Gemini Enterprise
-implementations. Enterprise customers require secure, client-side tools to
-evaluate model performance, accuracy, and streaming latency on custom
-collections without relying on externally hosted evaluation platforms that
-violate data privacy policies.
+## Motivación
 
-## Key Features
+El aseguramiento de calidad es uno de los principales retos al implementar Gemini Enterprise. Los clientes empresariales requieren herramientas seguras del lado del cliente para evaluar el desempeño, la precisión y la latencia del modelo sobre colecciones privadas sin depender de plataformas externas que comprometan sus políticas de privacidad de datos.
 
--   **Client-Side Stateless Execution**: Direct API communication using end-user
-    tokens, ensuring data privacy.
--   **Multi-Turn Conversation Evaluation**: Group queries by `conversation_id`
-    (with consecutive `turn` numbers starting at `0` or `1`) to evaluate
-    multi-turn conversations with full Assistant session context threading.
--   **Latency Telemetry Capture**: Calculate and expose Time to First Token
-    (TTFT), Time To First Answer Token (TTFA), and Time To Last Token (TTLT) in seconds (s).
--   **Dual Metric Definition**: Support for both LLM-as-a-Judge rubrics and
-    programmatic evaluator modules.
+## Características principales
 
-## CSV Dataset Format
+- **Ejecución stateless del lado del cliente**: Comunicación directa con las APIs usando tokens del usuario final, preservando la privacidad de los datos.
+- **Interfaz multilingüe para LATAM**: Español Latinoamericano por defecto, con cambio instantáneo a Portugués (Brasil) e Inglés desde el selector del encabezado (persistido en `localStorage`), manteniendo compatibilidad 100% con los encabezados CSV estándar.
+- **Evaluación de conversaciones multiturno**: Agrupa consultas mediante `conversation_id` (con números consecutivos en `turn` iniciando en `0` o `1`) para evaluar conversaciones multiturno conservando el contexto de sesión del asistente.
+- **Telemetría de latencia**: Calcula y muestra en segundos (`s`):
+  - **TTFT** (*Time to First Token* — Tiempo hasta el primer token)
+  - **TTFA** (*Time To First Answer Token* — Tiempo hasta el primer token de respuesta)
+  - **TTLT** (*Time To Last Token* — Tiempo hasta el último token)
+- **Definición dual de métricas**: Soporte para rúbricas con *Auto Rater* (LLM-as-a-Judge) y evaluadores programáticos (LCS / ROUGE-L F1 y Source Attribution).
 
-For **Run Evaluation**, your input CSV must include `query` and `golden` columns. To evaluate **multi-turn conversations**, include the `conversation_id` and `turn` columns:
+## Formato del dataset CSV
 
-| Column | Required | Description |
+> **Importante:** Para mantener compatibilidad con datasets existentes, `Compare Evals` y el proyecto original, los **nombres de columnas CSV se mantienen en inglés** independientemente del idioma seleccionado en la interfaz.
+
+Para **Ejecutar evaluación** (*Run Evaluation*), el CSV de entrada debe incluir las columnas `query` y `golden`. Para evaluar **conversaciones multiturno**, agrega `conversation_id` y `turn`:
+
+| Columna | Obligatoria | Descripción |
 | :--- | :---: | :--- |
-| `query` | Yes | The user prompt or question sent to the Assistant. |
-| `golden` | Yes | The expected ideal response used by the auto-rater. |
-| `conversation_id` | No | Groups rows into a single multi-turn conversation sharing session context across turns. Rows without a `conversation_id` run as independent single-turn queries. |
-| `turn` | No (Required if `conversation_id` is set) | Consecutive numeric turn order within a `conversation_id` starting at `0` or `1` (e.g., `1`, `2`, `3`). If a turn ID is missing or non-consecutive, all remaining rows in that conversation are marked `INVALID_TURN_ID: Incorrect or missing turn ID.` |
+| `query` | Sí | El *prompt* o consulta enviada al asistente. |
+| `golden` | Sí | La respuesta ideal esperada usada como referencia por el evaluador. |
+| `conversation_id` | No | Agrupa filas en una conversación multiturno compartiendo el mismo contexto de sesión. Las filas sin `conversation_id` se ejecutan como consultas independientes de un solo turno. |
+| `turn` | No (Obligatoria si hay `conversation_id`) | Orden numérico consecutivo del turno dentro de un `conversation_id`, iniciando en `0` o `1` (ej. `1`, `2`, `3`). Si falta o no es consecutivo, las filas restantes de esa conversación se marcan como `INVALID_TURN_ID`. |
+| `expected_sources` | No | Lista separada por `;` de fuentes esperadas para el evaluador *Source Attribution*. |
+| `connectors_override` | No | IDs de conectores separados por `;`, `web_search` para búsqueda web, `[]` para ninguno, o vacío para heredar la configuración global. |
 
-## Scoring
+## Calificación (*Scoring*)
 
-Each evaluated row without an error (`SKIPPED`, `FAILED`, `ERROR`,
-`INVALID_TURN_ID`, or `SESSION_FAILED`) is scored between `0.0` and `1.0` using
-the method set up in the **Scoring Setup** card of the configuration step; rows
-with an error code (or missing a required `golden` response) are skipped and
-leave their score cells blank. The **Auto Rater (LLM as a judge)** method asks a
-Gemini model to rate the fetched response against the `golden` response:
+Cada fila evaluada sin error (`SKIPPED`, `FAILED`, `ERROR`, `INVALID_TURN_ID` o `SESSION_FAILED`) recibe un puntaje entre `0.0` y `1.0` según los métodos elegidos en **Configuración de evaluación (Scoring)**; las filas con error (o sin `golden` cuando el evaluador lo requiere) se omiten y dejan la celda en blanco. El método **Auto Rater (LLM-as-a-Judge)** solicita a un modelo Gemini que califique la respuesta obtenida frente a la respuesta `golden`:
 
-| Setting | Description |
+| Parámetro | Descripción |
 | :--- | :--- |
-| **Auto Rater Model** | The Gemini model that rates each response. |
-| **Auto Rater Instruction** | The rubric and scoring scale the model follows. Must be at least 20 characters long. |
+| **Ubicación del Auto Rater** | Ubicación de Vertex AI (`global`, `us`, `eu`). |
+| **Modelo del Auto Rater** | El modelo Gemini que califica cada respuesta. |
+| **Instrucciones del Auto Rater** | La rúbrica y escala de calificación que seguirá el modelo (mínimo 20 caracteres). Al cambiar de idioma en la UI, la rúbrica por defecto se adapta automáticamente si no ha sido modificada manualmente. |
 
-**Next** stays disabled, with the reason shown in the card, until a scoring
-method is selected and its settings are complete. To add a scoring method, see
-[`src/app/scoring/README.md`](src/app/scoring/README.md).
+Para agregar un evaluador personalizado, consulta [`src/app/scoring/README.md`](src/app/scoring/README.md).
 
-## Choosing an Agent
+## Selección de Agente
 
-By default, every query is sent to the selected engine's default assistant. To
-evaluate a custom agent instead, pick it from the **Agent** dropdown, which
-lists the agents published under the selected engine. Agents that were never
-deployed, are still being created or deployed, or failed to deploy are not
-listed, because they cannot answer queries. Suspended agents are listed and
-marked "(suspended)"; only their owners (and, in Enterprise edition, admins)
-can run them.
+Por defecto, cada consulta se envía al asistente predeterminado del *engine* seleccionado. Para evaluar un agente personalizado, selecciónalo en el desplegable **Agente**, que lista los agentes publicados bajo ese *engine*. Los agentes suspendidos aparecen marcados como `(suspendido)` y solo sus propietarios (o administradores en edición Enterprise) pueden ejecutarlos.
 
--   Every query in a run goes to the same agent. Per-row agent selection is not
-    supported.
--   The selection goes back to **Default assistant (no agent)** when the
-    engine changes, or when the agent list reloads and no longer offers the
-    selected agent. It is not saved between sessions.
--   If the agents cannot be listed, for example because you lack permission to
-    list them, the reason is shown under the dropdown and the run uses the
-    default assistant.
--   Settings are locked while a run is in progress, so every row uses the same
-    engine, model, connectors, and agent.
--   The exported CSV has an **Agent ID** column holding the agent each row was
-    sent to. It is empty for rows that used the default assistant.
+- Todas las consultas de una ejecución se envían al mismo agente.
+- La configuración queda bloqueada mientras una ejecución está en curso para garantizar consistencia entre filas.
+- El CSV exportado incluye una columna `Agent ID` con el agente usado en cada fila (vacía si se usó el asistente predeterminado).
 
-## Data Privacy and Governance
+## Privacidad y gobierno de datos
 
-To ensure security and compliance with enterprise data policies, Gemini
-Enterprise Eval Studio is designed with a strict client-side, stateless
-architecture:
+1. **Aislamiento en tu tenant de GCP**: La herramienta opera completamente dentro de tu entorno de Google Cloud Platform (GCP).
+2. **Sin recolección de datos por parte de Google**: Google no recopila, almacena ni accede a tus datos de cliente, consultas, entradas ni resultados de evaluación.
+3. **Acuerdos vigentes**: Todo uso de APIs se rige únicamente por tus acuerdos vigentes de Google Cloud (por ejemplo, Vertex AI APIs).
+4. **Política de retención de tokens y Firestore**:
+   - **SAML**: Sin almacenamiento de credenciales ni refresh tokens en Firestore (las sesiones expiran tras 1 hora).
+   - **Google Identity y 3P OIDC**: Si se habilita `firestore_config`, los refresh tokens se guardan en Firestore con TTL configurable (`firestore_config.ttlSeconds`, 7 días por defecto).
+5. **Responsabilidad sobre los datos exportados**: Los archivos CSV descargados residen en tu equipo local fuera de GCP; debes resguardarlos y eliminarlos conforme a las políticas de tu organización.
 
-1.  **GCP Tenant Isolation**: The tool operates entirely within the user's
-    Google Cloud Platform (GCP) tenant. All computations, evaluation runs, and
-    data storage occur within your controlled environment.
-2.  **No Google Data Collection**: Google does not collect, store, or have
-    access to your customer data, queries, evaluation inputs, or evaluation
-    results processed by this tool. There are no telemetry pings, usage analytics,
-    or error reporting sent to any Google-owned project.
-3.  **Governing Agreements**: Any data handling and API calls made by the tool
-    are governed solely by the customer's existing agreements with Google Cloud
-    for the specific APIs used (e.g., Vertex AI APIs).
-4.  **Token Storage & Firestore Retention Policy by Auth Provider**:
-    - **SAML**: No credentials or tokens are stored in Firestore. SAML authentication assertions are processed statelessly without storing refresh tokens.
-    - **Google Identity & 3P OIDC**: If server-side token storage in Firestore is enabled (`firestore_config`), user refresh tokens are stored in your GCP project's Firestore database. Administrators can configure `firestore_config.ttlSeconds` to control how long refresh tokens remain valid/stored before users are required to sign in again (defaults to 7 days).
-    - **Firestore Purge Latency**: Expired tokens in Firestore are automatically purged under a TTL policy, which typically deletes expired documents within 24–72 hours of expiration. Please ensure this retention window satisfies your compliance requirements.
-5.  **Exported Data Responsibility**: Query and evaluation results exported to
-    CSV may contain Customer Core Content (such as queries, golden responses,
-    model responses, and scores). Once downloaded, these files are stored on
-    your local filesystem, outside of your Google Cloud environment. You are
-    solely responsible for securing and protecting exported files in accordance
-    with your organization's data handling policies, including restricting
-    access, storing them securely, and deleting them when no longer needed.
+## Prerrequisitos y configuración
 
-## Prerequisites & Setup
+Gemini Enterprise Eval Studio soporta dos modos de operación:
 
-Gemini Enterprise Eval Studio supports two operational modes depending on your environment:
+- **Modo Auth (Producción / Equipos)**: Los usuarios se autentican con Google Workspace (`google_identity`) o proveedores de identidad externos (`3p_oidc` / `3p_saml`) mediante Workforce Identity Federation (WIF).
+- **Modo No-Auth (Cliente / Pruebas rápidas locales)**: La aplicación corre únicamente como frontend sin servidor backend. El usuario pega un token temporal de acceso de Google Cloud directamente en la UI.
 
-- **Auth Mode (Production / Team Deployment)**: Users authenticate via Google Workspace (Google Identity) or external Identity Providers (OIDC / SAML) using Workforce Identity Federation. Sessions are encrypted, and server-side refresh token persistence in Firestore is supported for **Google Workspace (`google_identity`)** and **OIDC (`3p_oidc`)** providers to extend sessions beyond 1 hour. Note: **SAML (`3p_saml`) providers do not support refresh tokens**; SAML sessions expire after 1 hour and require re-authentication.
-- **No-Auth Mode (Client-Side / Quick Testing)**: The application runs as a **frontend-only site** without a backend server. Users authenticate by directly inputting a temporary Google Cloud access token into the UI.
+### 1. APIs requeridas en GCP
 
-### 1. Common Prerequisites (API Enablement)
-
-In the Google Cloud Console, navigate to **APIs & Services > Library** and enable the following APIs for your GCP project:
+En Google Cloud Console, ve a **APIs y servicios > Biblioteca** y habilita:
 1. **Agent Platform API** (`agentplatform.googleapis.com`)
 2. **Discovery Engine API** (`discoveryengine.googleapis.com`)
 
-### 2. Auth Mode Setup
+### 2. Configuración del Modo Auth
 
-1. **Identity Provider Credentials**:
-   - **Google Workspace (`google_identity`)**: [Create an OAuth 2.0 Client ID](https://cloud.google.com/iam/docs/creating-managing-oauth-clients) in your Google Cloud Console. Set the Authorized Redirect URIs to include `http://localhost:3000/auth/callback` (or your production domain).
-   - **Third-Party Providers (`3p_oidc` / `3p_saml`)**: [Set up Workforce Identity Federation (WIF)](https://cloud.google.com/iam/docs/workforce-identity-federation) in GCP by creating a Workforce Pool and Provider. Register an OIDC or SAML application in your external IdP (e.g., Okta, Entra ID) and set the callback URI to `http://localhost:3000/auth/callback`.
-     > **Security Recommendation**: Configure attribute conditions or conditional access policies in your Workforce Identity Federation (WIF) Provider or external IdP to restrict access strictly to authorized business users and prevent unauthorized login by non-business accounts.
-2. **Secret Manager (Optional but recommended)**:
-   - Store your OAuth client secret and session encryption key in GCP Secret Manager and use their URIs in `config.json`.
-3. **Application Configuration (`config.json`)**:
-   - Create a `config.json` file in the root directory based on `config.json.example`.
-   - Configure `session_config.encryption_key_secret` (can be a 32-character string for local dev) and your `auth_providers` array.
-   - *(Optional)* Configure `firestore_config` to enable server-side refresh token storage in Firestore (requires a database created in **Firestore Native mode**), extending user sessions beyond 1 hour for Google Identity and OIDC providers.
-   - *(Optional)* Configure `trusted_hosts` array to allowlist custom hostnames for authentication redirects.
+1. Configura tus credenciales de OAuth 2.0 (Google Workspace) o Workforce Identity Federation (OIDC/SAML) con URI de redirección `http://localhost:3000/auth/callback` (o tu dominio de producción).
+2. Crea un archivo `config.json` en la raíz basado en [`config.json.example`](config.json.example).
+3. *(Opcional)* Usa GCP Secret Manager para los secretos y `firestore_config` (Firestore en modo Native) para persistir refresh tokens.
 
-### 3. No-Auth Mode Setup
+### 3. Configuración del Modo No-Auth (Prueba local)
 
-In No-Auth Mode, the application operates as a standalone frontend-only web application without requiring a backend server or identity provider configuration.
+1. Obtén un token temporal de acceso de Google Cloud ejecutando en tu terminal (o en Cloud Shell):
+   ```sh
+   gcloud auth print-access-token
+   ```
+   *Nota: estos tokens son temporales y deberán renovarse periódicamente.*
+2. Pega el token en el campo **Token de acceso de gcloud** en la pantalla de configuración de la aplicación.
 
-1. Obtain a temporary Google Cloud access token by running the following command in your terminal (or open Cloud Shell using the terminal icon on the top right of the Google Cloud Console):
+## Ejecución local
 
-    ```sh
-    gcloud auth print-access-token
-    ```
-    *Note: Access tokens are short-lived and will need to be refreshed periodically.*
-
-2. Input the generated access token directly into the configuration screen in the application's UI.
-
-    <p align="center">
-      <img src="src/assets/cloud_shell_icon.png" alt="Cloud Shell Terminal Button" />
-    </p>
-
-## Running Locally
-
-To run the application locally using `npm`, first install dependencies:
+Instala las dependencias:
 
 ```sh
 npm ci
 ```
 
-Then start the server in either **Auth Mode** (full stack) or **No-Auth Mode** (client-side frontend only):
+Luego inicia el servidor en el modo que prefieras:
 
-- **Running in Auth Mode (Full Stack with Backend Express Server)**:
+- **Modo No-Auth (solo frontend, puerto `4200` — ideal para pruebas locales):**
+  ```sh
+  npm run start:no-auth
+  # o simplemente: npm start
+  ```
+
+- **Modo Auth (full stack con backend Express en puerto `3000` + frontend Angular):**
   ```sh
   npm run start:auth
   ```
-  This starts both the Node.js Express backend server (default port 3000) and the Angular frontend development server configured to proxy API requests to the backend.
 
-- **Running in No-Auth Mode (Client-Side Frontend Only)**:
-  ```sh
-  npm run start:no-auth
-  ```
-  By default, the frontend listens on port 4200.
+### Ejecutar pruebas automatizadas
 
-## Running with Docker
+```sh
+# Todas las pruebas (frontend + servidor)
+npm test
 
-Gemini Enterprise Eval Studio includes a multi-stage `Dockerfile` that packages both the compiled Angular SPA and the Node.js Express backend server into a single production container image.
+# Solo frontend
+npm run test:frontend
 
-### 1. Build the Image
+# Solo servidor
+npm run test:server
+```
+
+## Ejecución con Docker y Cloud Run
+
+### 1. Construir la imagen
 ```sh
 docker build -t gemini-enterprise-eval-studio .
 ```
 
-### 2. Run the Container
+### 2. Ejecutar el contenedor
 ```sh
 docker run -d \
   -p 8080:8080 \
@@ -197,14 +149,7 @@ docker run -d \
   gemini-enterprise-eval-studio
 ```
 
-### Configuration Options:
-- **Port Mapping**: Map the container to any host port using `-p <host_port>:8080` (e.g. `-p 3000:8080` to access the application at `http://localhost:3000`).
-- **Port Environment Variable**: If you wish to change the container's internal listening port, pass `-e PORT=<port>` (defaults to `8080`).
-- **Configuration File**: Mount your `config.json` into `/app/config.json` via `-v` volume mount, or specify a custom path inside the container using `-e CONFIG_PATH=/path/to/config.json`.
-
-### 3. Deploy to Cloud Run
-You can deploy the application directly to Cloud Run from source. Cloud Run will automatically build the container image using the `Dockerfile` and deploy the service:
-
+### 3. Desplegar en Cloud Run
 ```sh
 gcloud run deploy gemini-enterprise-eval-studio \
   --project=<PROJECT_ID> \
@@ -212,22 +157,6 @@ gcloud run deploy gemini-enterprise-eval-studio \
   --source=.
 ```
 
-## Uninstall and Resource Deletion
+## Licencia y atribución
 
-To completely uninstall Gemini Enterprise Eval Studio and delete all associated data and resources from your GCP project:
-
-1. **Stop or Remove Application Deployment**:
-   - Terminate the local application server or container process. To verify the backend server is down, ping the `/healthz` endpoint (e.g., `curl http://localhost:3000/healthz`); it should fail to connect.
-   - If deployed to a cloud environment (e.g., Cloud Run, App Engine), delete the deployed service or instance.
-
-2. **Delete Firestore Session Data**:
-   - If Firestore token storage was enabled (`firestore_config`), navigate to **Firestore** in the Google Cloud Console and delete the session/token collections.
-   - Alternatively, delete the Firestore database instance if it was created solely for this tool. Note: If relying on TTL expiration rather than manual deletion, expired documents are automatically purged by Firestore within 24–72 hours.
-
-3. **Remove Identity Provider Credentials & WIF**:
-   - Delete the OAuth 2.0 Client ID under **APIs & Services > Credentials** in your GCP project.
-   - If Workforce Identity Federation (WIF) was configured, delete the Workforce Pool and Provider under **IAM & Admin > Workforce Identity Pools**.
-
-4. **Delete Stored Secrets & Disable APIs (Optional)**:
-   - Delete any stored secrets in **Secret Manager** (such as OAuth client secrets or session encryption keys).
-   - Disable the Agent Platform API and Discovery Engine API under **APIs & Services > Enabled APIs & Services** if they are no longer needed.
+Licenciado bajo [Apache License 2.0](LICENSE). Basado en el proyecto original [GoogleCloudPlatform/gemini-enterprise-eval-studio](https://github.com/GoogleCloudPlatform/gemini-enterprise-eval-studio).

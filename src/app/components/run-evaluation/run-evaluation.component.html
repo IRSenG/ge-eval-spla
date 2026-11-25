@@ -11,7 +11,7 @@
       }"
       class="focus:outline-none transition-colors"
     >
-      1. Configuration
+      {{ 'wizard.step1' | t }}
     </button>
     <div class="text-gray-300">/</div>
     <button
@@ -24,7 +24,7 @@
       }"
       class="focus:outline-none transition-colors"
     >
-      2. Upload & Run
+      {{ 'wizard.step2' | t }}
     </button>
     <div class="text-gray-300">/</div>
     <button
@@ -37,7 +37,7 @@
       }"
       class="focus:outline-none transition-colors"
     >
-      3. Results
+      {{ 'wizard.step3' | t }}
     </button>
   </div>
 
@@ -70,7 +70,7 @@
       (prev)="prevStep()"
       (run)="startEvaluation($event)"
       [instruction]="uploadInstruction"
-      [buttonText]="'Run Evaluation'"
+      [buttonText]="'eval.runButton' | t"
       [requiredColumns]="['query', 'golden']"
     ></app-file-upload>
   </div>
@@ -80,7 +80,7 @@
     <app-csv-table
       [data]="displayResults"
       [columns]="columns"
-      [title]="'Evaluation Results'"
+      [title]="'eval.resultsTitle' | t"
       [exportFileName]="'eval_results'"
       [rowErrorKey]="'errorCode'"
       [rowWarningValues]="['SKIPPED']"
@@ -90,7 +90,7 @@
           (click)="prevStep()"
           class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors font-medium"
         >
-          Back to Upload
+          {{ 'eval.backToUpload' | t }}
         </button>
         <button
           (click)="openReRateModal()"
@@ -99,7 +99,7 @@
           <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
           </svg>
-          <span>Re-rate Responses</span>
+          <span>{{ 'eval.reRateButton' | t }}</span>
         </button>
       </div>
     </app-csv-table>
@@ -109,7 +109,7 @@
   <app-progress-bar
     *ngIf="isProcessing"
     [progress]="progress"
-    [text]="'Evaluating... (' + completedRows + ' / ' + totalRows + ')'"
+    [text]="'eval.progressText' | t:{completed: completedRows, total: totalRows}"
     [canStop]="true"
     (stop)="stopEvaluation()"
   ></app-progress-bar>
@@ -125,14 +125,12 @@
   <div
     role="dialog"
     aria-modal="true"
-    aria-label="Re-rate Responses"
+    [attr.aria-label]="'eval.reRateTitle' | t"
     class="bg-white rounded-lg shadow-xl transform transition-all max-w-lg w-full max-h-full overflow-y-auto p-6 space-y-4"
   >
-    <h3 class="text-lg font-medium text-gray-900">Re-rate Responses</h3>
+    <h3 class="text-lg font-medium text-gray-900">{{ 'eval.reRateTitle' | t }}</h3>
     <p class="text-sm text-gray-500">
-      Adjust the scoring setup below and re-score the current responses with
-      {{ selectedScorersLabel }} without re-fetching them. Re-rating saves
-      these settings to the Run Evaluation configuration.
+      {{ 'eval.reRateDescription' | t:{scorers: selectedScorersLabel} }}
     </p>
     <app-scoring-setup
       [config]="draft"
@@ -143,16 +141,15 @@
         (click)="closeReRateModal()"
         class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors font-medium"
       >
-        Cancel
+        {{ 'eval.cancel' | t }}
       </button>
       <button
         (click)="startReRate()"
         [disabled]="!!reRateValidationError"
         class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-md hover:from-blue-700 hover:to-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Re-rate
+        {{ 'eval.reRateConfirm' | t }}
       </button>
     </div>
   </div>
 </div>
-

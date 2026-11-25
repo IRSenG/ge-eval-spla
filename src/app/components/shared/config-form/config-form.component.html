@@ -3,7 +3,7 @@
   data-test-id="config-form-locked-notice"
   class="mb-4 p-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md"
 >
-  Settings are locked while a run is in progress, so every row uses the same settings.
+  {{ 'config.lockedNotice' | t }}
 </div>
 <!-- A disabled fieldset disables every native control inside it, including
      those rendered by child components. -->
@@ -11,14 +11,14 @@
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
   <!-- Engine Selection Card -->
   <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-    <h3 class="text-lg font-medium mb-4 text-gray-800">Engine Selection</h3>
+    <h3 class="text-lg font-medium mb-4 text-gray-800">{{ 'config.engineSelection' | t }}</h3>
     <div class="space-y-4">
       <div>
         <label for="projectId" class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-          ><span>Project ID</span
+          ><span>{{ 'config.projectId' | t }}</span
           ><app-info-tooltip
             class="inline-flex"
-            text="The Google Cloud Project ID where your Discovery Engine is located."
+            [text]="'config.projectIdTooltip' | t"
           ></app-info-tooltip
         ></label>
         <input
@@ -27,19 +27,19 @@
           (ngModelChange)="changeConfigAndResetEngines()"
           type="text"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-          placeholder="my-project-id"
+          [placeholder]="'config.projectIdPlaceholder' | t"
         />
       </div>
       <div>
         <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-          ><span>Region</span
+          ><span>{{ 'config.region' | t }}</span
           ><app-info-tooltip
             class="inline-flex"
-            text="The region where your Discovery Engine is located (e.g., global, us, eu)."
+            [text]="'config.regionTooltip' | t"
           ></app-info-tooltip
         ></label>
         <select
-          aria-label="Region"
+          [attr.aria-label]="'config.region' | t"
           [(ngModel)]="config.region"
           (ngModelChange)="onRegionChange()"
           class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -51,10 +51,10 @@
       </div>
       <div *ngIf="authService.showCredentialInputs">
         <label for="gCloudToken" class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1">
-          <span>gCloud Access Token</span>
+          <span>{{ 'config.gcloudToken' | t }}</span>
           <app-info-tooltip
             class="inline-flex"
-            text="OAuth 2.0 Access Token for Google Cloud APIs. Obtain via 'gcloud auth print-access-token'."
+            [text]="'config.gcloudTokenTooltip' | t"
           ></app-info-tooltip>
         </label>
         <input
@@ -72,7 +72,7 @@
         [disabled]="loading"
         class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 rounded-md hover:from-blue-700 hover:to-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Fetch Engines
+        {{ 'config.fetchEngines' | t }}
       </button>
 
       <!-- Loading Indicator -->
@@ -80,7 +80,7 @@
         <div
           class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"
         ></div>
-        <span>Fetching engines...</span>
+        <span>{{ 'config.fetchingEngines' | t }}</span>
       </div>
 
       <!-- Error Message -->
@@ -92,14 +92,14 @@
       <div *ngIf="engines.length > 0" class="space-y-4">
         <div>
           <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-            ><span>Engine</span
+            ><span>{{ 'config.engine' | t }}</span
             ><app-info-tooltip
               class="inline-flex"
-              text="The specific search engine or app to evaluate."
+              [text]="'config.engineTooltip' | t"
             ></app-info-tooltip
           ></label>
           <select
-            aria-label="Engine"
+            [attr.aria-label]="'config.engine' | t"
             [(ngModel)]="config.selectedEngine"
             (change)="onEngineChange()"
             class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -109,14 +109,14 @@
         </div>
         <div>
           <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-            ><span>Model</span
+            ><span>{{ 'config.model' | t }}</span
             ><app-info-tooltip
               class="inline-flex"
-              text="The generation model to use for evaluation."
+              [text]="'config.modelTooltip' | t"
             ></app-info-tooltip
           ></label>
           <select
-            aria-label="Model"
+            [attr.aria-label]="'config.model' | t"
             [(ngModel)]="config.selectedModel"
             (ngModelChange)="onConfigChange()"
             class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -127,21 +127,21 @@
         </div>
         <div *ngIf="config.selectedEngine">
           <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-            ><span>Agent</span
+            ><span>{{ 'config.agent' | t }}</span
             ><app-info-tooltip
               class="inline-flex"
-              text="The agent published under this engine that every query in the run is sent to. Leave on the default assistant to evaluate the engine itself."
+              [text]="'config.agentTooltip' | t"
             ></app-info-tooltip
           ></label>
           <select
-            aria-label="Agent"
+            [attr.aria-label]="'config.agent' | t"
             data-test-id="config-form-agent-select"
             [(ngModel)]="config.selectedAgent"
             (ngModelChange)="onConfigChange()"
             class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             [disabled]="agentsLoading || agents.length === 0"
           >
-            <option value="">Default assistant (no agent)</option>
+            <option value="">{{ 'config.defaultAssistant' | t }}</option>
             <option *ngFor="let a of agents" [value]="a.name">{{ agentLabel(a) }}</option>
           </select>
           <div
@@ -152,21 +152,21 @@
             <div
               class="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"
             ></div>
-            <span>Loading agents...</span>
+            <span>{{ 'config.loadingAgents' | t }}</span>
           </div>
           <div
             *ngIf="!agentsLoading && !agentsErrorMessage && agents.length === 0"
             data-test-id="config-form-no-agents"
             class="mt-1 text-xs text-gray-500"
           >
-            No agents published under this engine.
+            {{ 'config.noAgents' | t }}
           </div>
           <div
             *ngIf="agentsErrorMessage"
             data-test-id="config-form-agents-error"
             class="mt-1 text-xs text-amber-700"
           >
-            {{ agentsErrorMessage }} Queries will run against the default assistant.
+            {{ agentsErrorMessage }} {{ 'config.agentsErrorFallback' | t }}
           </div>
           <div
             *ngIf="getSelectedAgent()?.description"
@@ -178,10 +178,10 @@
         </div>
         <div *ngIf="config.selectedEngine" #dropdownContainer class="relative">
           <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-            ><span>Connectors</span
+            ><span>{{ 'config.connectors' | t }}</span
             ><app-info-tooltip
               class="inline-flex"
-              text="Select one or more connectors to use."
+              [text]="'config.connectorsTooltip' | t"
             ></app-info-tooltip
           ></label>
 
@@ -207,7 +207,7 @@
               <input
                 type="text"
                 [(ngModel)]="connectorSearchQuery"
-                placeholder="Search connectors..."
+                [placeholder]="'config.searchConnectorsPlaceholder' | t"
                 class="w-full p-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                 (click)="$event.stopPropagation()"
               />
@@ -232,11 +232,11 @@
                     />
                     <span>{{ option.displayName }}</span>
                   </div>
-                  <span *ngIf="option.entityIds.length > 1" class="text-xs text-gray-400 font-normal">({{ option.entityIds.length }} entities)</span>
+                  <span *ngIf="option.entityIds.length > 1" class="text-xs text-gray-400 font-normal">{{ 'config.entitiesCount' | t:{count: option.entityIds.length} }}</span>
                 </label>
               </div>
               <div *ngIf="filteredConnectors().length === 0" class="text-sm text-gray-500 p-3 text-center">
-                No connectors found.
+                {{ 'config.noConnectorsFound' | t }}
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@
 
   <!-- Scoring Setup Card -->
   <div *ngIf="!isRunQueries" class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-    <h3 class="text-lg font-medium mb-4 text-gray-800">Scoring Setup</h3>
+    <h3 class="text-lg font-medium mb-4 text-gray-800">{{ 'config.scoringSetup' | t }}</h3>
     <app-scoring-setup
       [config]="config"
       (configChange)="onConfigChange()"
@@ -266,6 +266,6 @@
     [disabled]="!canProceed()"
     class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors font-medium"
   >
-    Next
+    {{ 'config.next' | t }}
   </button>
 </div>

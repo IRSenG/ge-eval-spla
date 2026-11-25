@@ -17,13 +17,15 @@
 import {CommonModule} from '@angular/common';
 import {Component, EventEmitter, Input, Output} from '@angular/core';
 
+import {TranslatePipe} from '../../../i18n/translate.pipe';
+
 /**
  * Component for displaying a progress bar with optional text.
  */
 @Component({
   selector: 'app-progress-bar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './progress-bar.component.html'
 })
 export class ProgressBarComponent {

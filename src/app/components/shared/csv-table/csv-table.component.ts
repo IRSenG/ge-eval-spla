@@ -15,9 +15,12 @@
  */
 
 import {CommonModule, formatDate} from '@angular/common';
-import {Component, Input, OnChanges} from '@angular/core';
+import {Component, Input, OnChanges, Optional} from '@angular/core';
 
-import {DELTA_LABEL_BADGE_CLASSES} from '../../../models/comparison-result.model';
+import {I18nService} from '../../../i18n/i18n.service';
+import {TranslatePipe} from '../../../i18n/translate.pipe';
+import {TranslationKey} from '../../../i18n/translations';
+import {DELTA_LABEL_BADGE_CLASSES, SCORE_STATUS_LABELS, ScoreStatusChange} from '../../../models/comparison-result.model';
 import {CsvService} from '../../../services/csv.service';
 import {InfoTooltipComponent} from '../info-tooltip/info-tooltip.component';
 
@@ -54,7 +57,7 @@ export interface ColumnDef {
 @Component({
   selector: 'app-csv-table',
   standalone: true,
-  imports: [CommonModule, InfoTooltipComponent],
+  imports: [CommonModule, InfoTooltipComponent, TranslatePipe],
   templateUrl: './csv-table.component.html'
 })
 /**
@@ -72,7 +75,20 @@ export class CsvTableComponent implements OnChanges {
   hasTruncated = false;
   readonly deltaLabelBadgeClasses = DELTA_LABEL_BADGE_CLASSES;
 
-  constructor(private csvService: CsvService) {}
+  private readonly deltaLabelToStatusKey: Readonly<Record<string, TranslationKey>> =
+      Object.fromEntries(
+          (Object.entries(SCORE_STATUS_LABELS) as Array<[ScoreStatusChange, string]>)
+              .map(([status, label]) => [label, `compare.status.${status}` as TranslationKey]));
+
+  constructor(
+      private csvService: CsvService,
+      @Optional() private readonly i18n?: I18nService
+  ) {}
+
+  translateDeltaLabel(value: string): string {
+    const key = this.deltaLabelToStatusKey[value];
+    return (key && this.i18n) ? this.i18n.t(key) : value;
+  }
 
   ngOnChanges() {
     this.hasTruncated = this.columns.some(col => col.truncate);

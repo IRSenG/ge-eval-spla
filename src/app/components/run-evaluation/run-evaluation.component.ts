@@ -19,17 +19,19 @@ import {ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
 import {Subject} from 'rxjs';
 import {distinctUntilChanged, map, takeUntil} from 'rxjs/operators';
 
+import {I18nService} from '../../i18n/i18n.service';
+import {TranslatePipe} from '../../i18n/translate.pipe';
 import {traceCells} from '../../models/answer-trace.model';
 import {AppConfig} from '../../models/app-config.model';
 import {CSVRow, EXPECTED_SOURCES_COLUMN, extraColumns} from '../../models/csv-row.model';
-import {ResultRow, TRACE_COLUMN_TOOLTIP, isScorableRow} from '../../models/result-row.model';
+import {ResultRow, isScorableRow} from '../../models/result-row.model';
 import {scoreColumnHeader, scoreErrorColumnHeader} from '../../scoring/score-columns';
 import {Scorer, ScorerRunResult, firstScorerError} from '../../scoring/scorer';
 import {ScorerRegistry} from '../../scoring/scorer.registry';
 import {ScorerSelection} from '../../scoring/scorer-selection';
 import {EvalService} from '../../services/eval.service';
 import {StateService} from '../../services/state.service';
-import {CONNECTORS_OVERRIDE_INSTRUCTION, hasConnectorsOverrideColumn} from '../../utils/row-config.util';
+import {hasConnectorsOverrideColumn} from '../../utils/row-config.util';
 import {ConfigFormComponent} from '../shared/config-form/config-form.component';
 import {ColumnDef, CsvTableComponent} from '../shared/csv-table/csv-table.component';
 import {FileUploadComponent} from '../shared/file-upload/file-upload.component';
@@ -37,51 +39,6 @@ import {ProgressBarComponent} from '../shared/progress-bar/progress-bar.componen
 import {ScoringSetupComponent} from '../shared/scoring-setup/scoring-setup.component';
 
 const MAX_CONCURRENT_REQUESTS_FOR_EVALUATION = 5;
-
-/** The columns shown before the scores, whichever scorers ran. */
-const BASE_COLUMNS: readonly ColumnDef[] = [
-  {header: 'Query', key: 'query', truncate: true},
-  {header: 'Golden', key: 'golden', type: 'markdown', truncate: true},
-  {header: 'Fetched', key: 'fetched', type: 'markdown', truncate: true}, {
-    header: 'Connectors Used',
-    key: 'connectorsUsed',
-    exportHeader: 'connectors_used',
-    truncate: true
-  },
-  // The answer trace: which documents, data stores and connectors backed the
-  // answer. Exported under the `cited*` names.
-  {
-    header: 'Sources',
-    exportHeader: 'citedSources',
-    key: 'citedSources',
-    truncate: true
-  },
-  {
-    header: 'Data stores',
-    exportHeader: 'citedDataStores',
-    key: 'citedDataStores'
-  },
-  {
-    header: 'Connectors',
-    exportHeader: 'citedConnectors',
-    key: 'citedConnectors'
-  },
-  {header: 'Conversation', key: 'conversationId', truncate: true},
-  {header: 'Turn', key: 'turn', type: 'number'},
-  {header: 'TTFT (s)', key: 'ttft', type: 'number'},
-  {header: 'TTFA (s)', key: 'ttfa', type: 'number'},
-  {header: 'TTLT (s)', key: 'ttlt', type: 'number'},
-];
-
-/** The Trace link column shown after the score columns. */
-const TRACE_COLUMN: ColumnDef = {
-  header: 'Trace',
-  key: 'traceUrl',
-  type: 'link',
-  linkText: 'View Trace',
-  tooltip: TRACE_COLUMN_TOOLTIP,
-  tooltipAlign: 'right'
-};
 
 /** Column key holding a given scorer's score on a displayed row. */
 function scoreKey(scorerId: string): string {
@@ -110,16 +67,17 @@ function sameIds(
   standalone: true,
   imports: [
     CommonModule, ConfigFormComponent, FileUploadComponent, CsvTableComponent,
-    ProgressBarComponent, ScoringSetupComponent
+    ProgressBarComponent, ScoringSetupComponent, TranslatePipe
   ],
   templateUrl: './run-evaluation.component.html'
 })
 export class RunEvaluationComponent implements OnInit, OnDestroy {
   /** Instruction shown on the upload step. */
-  readonly uploadInstruction =
-      `CSV file with required 'query' and 'golden' columns (plus optional ` +
-      `'conversation_id' and consecutive 'turn' columns starting at 0 or 1 ` +
-      `for multi-turn evaluation, and ${CONNECTORS_OVERRIDE_INSTRUCTION})`;
+  get uploadInstruction(): string {
+    return this.i18n.t('eval.uploadInstruction', {
+      connectorsOverride: this.i18n.t('upload.connectorsOverrideInstruction'),
+    });
+  }
   step = 1;
   isProcessing = false;
   progress = 0;
@@ -155,7 +113,8 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
    * conversation and turn columns for single-turn runs, and the connectors
    * column unless the upload has a `connectors_override` column.
    */
-  private allColumns: ColumnDef[] = [...BASE_COLUMNS, TRACE_COLUMN];
+  private allColumns: ColumnDef[] = [];
+  private lastSelectedScorerIds?: readonly string[];
 
   /** The selected scorers, each with a score column, in display order. */
   private scorerColumns: readonly Scorer[] = [];
@@ -188,7 +147,9 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
   constructor(
       private stateService: StateService, private evalService: EvalService,
       private scorerRegistry: ScorerRegistry,
-      private scorerSelection: ScorerSelection, private cdr: ChangeDetectorRef) {
+      private scorerSelection: ScorerSelection, private cdr: ChangeDetectorRef,
+      public readonly i18n: I18nService) {
+    this.updateColumns();
   }
 
   ngOnInit() {
@@ -199,6 +160,7 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
             map(config => config.selectedScorers),
             distinctUntilChanged(sameIds), takeUntil(this.destroy$))
         .subscribe(selectedIds => {
+          this.lastSelectedScorerIds = selectedIds;
           this.updateColumns(selectedIds);
           this.refreshDisplayResults();
         });
@@ -206,6 +168,62 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
       this.results = r;
       this.refreshDisplayResults();
     });
+    this.i18n.language$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.updateColumns(this.lastSelectedScorerIds);
+      if (this.reRateConfig) {
+        this.refreshReRateDialog();
+      }
+      this.cdr.detectChanges();
+    });
+  }
+
+  private buildBaseColumns(): ColumnDef[] {
+    return [
+      {header: this.i18n.t('table.col.query'), exportHeader: 'Query', key: 'query', truncate: true},
+      {header: this.i18n.t('table.col.golden'), exportHeader: 'Golden', key: 'golden', type: 'markdown', truncate: true},
+      {header: this.i18n.t('table.col.fetched'), exportHeader: 'Fetched', key: 'fetched', type: 'markdown', truncate: true},
+      {
+        header: this.i18n.t('table.col.connectorsUsed'),
+        key: 'connectorsUsed',
+        exportHeader: 'connectors_used',
+        truncate: true
+      },
+      // The answer trace: which documents, data stores and connectors backed
+      // the answer. Exported under the `cited*` names.
+      {
+        header: this.i18n.t('table.col.sources'),
+        exportHeader: 'citedSources',
+        key: 'citedSources',
+        truncate: true
+      },
+      {
+        header: this.i18n.t('table.col.dataStores'),
+        exportHeader: 'citedDataStores',
+        key: 'citedDataStores'
+      },
+      {
+        header: this.i18n.t('table.col.connectors'),
+        exportHeader: 'citedConnectors',
+        key: 'citedConnectors'
+      },
+      {header: this.i18n.t('table.col.conversation'), exportHeader: 'Conversation', key: 'conversationId', truncate: true},
+      {header: this.i18n.t('table.col.turn'), exportHeader: 'Turn', key: 'turn', type: 'number'},
+      {header: 'TTFT (s)', exportHeader: 'TTFT (s)', key: 'ttft', type: 'number'},
+      {header: 'TTFA (s)', exportHeader: 'TTFA (s)', key: 'ttfa', type: 'number'},
+      {header: 'TTLT (s)', exportHeader: 'TTLT (s)', key: 'ttlt', type: 'number'},
+    ];
+  }
+
+  private buildTraceColumn(): ColumnDef {
+    return {
+      header: this.i18n.t('table.col.trace'),
+      exportHeader: 'Trace',
+      key: 'traceUrl',
+      type: 'link',
+      linkText: this.i18n.t('table.viewTrace'),
+      tooltip: this.i18n.t('table.traceTooltip'),
+      tooltipAlign: 'right'
+    };
   }
 
   /**
@@ -219,15 +237,17 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
   private updateColumns(selectedIds?: readonly string[]) {
     this.scorerColumns = this.scorerRegistry.resolveAll(selectedIds);
     this.allColumns = [
-      ...BASE_COLUMNS,
+      ...this.buildBaseColumns(),
       ...this.scorerColumns.map((scorer): ColumnDef => ({
-        header: scoreColumnHeader(scorer.displayName),
+        header: scoreColumnHeader(
+            this.i18n.scorerDisplayName(scorer.id, scorer.displayName)),
+        exportHeader: scoreColumnHeader(scorer.displayName),
         key: scoreKey(scorer.id),
         errorHeader: scoreErrorColumnHeader(scorer.displayName),
         errorKey: scoreErrorKey(scorer.id),
         type: 'score',
       })),
-      TRACE_COLUMN,
+      this.buildTraceColumn(),
     ];
   }
 
@@ -389,7 +409,8 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
 
           const scoreError = firstScorerError(result.scorerResults);
           if (scoreError && !this.errorMessage) {
-            this.errorMessage = `Scoring failed for some rows: ${scoreError}`;
+            this.errorMessage =
+                this.i18n.t('eval.errScoringFailed', {error: scoreError});
           }
 
           results[resultIndex] = {
@@ -464,7 +485,7 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
     const draft = this.reRateConfig;
     this.selectedScorersLabel = draft ?
         this.scorerSelection.selected(draft)
-            .map(scorer => scorer.displayName)
+            .map(scorer => this.i18n.scorerDisplayName(scorer.id, scorer.displayName))
             .join(', ') :
         '';
     this.reRateValidationError =
@@ -573,7 +594,8 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
       if (scoreError) {
         // Stop on the first failure rather than replaying the same broken
         // credentials or quota against every remaining row.
-        this.errorMessage = `Re-rating failed: ${scoreError}`;
+        this.errorMessage =
+            this.i18n.t('eval.errReRateFailed', {error: scoreError});
         aborted = true;
         for (let j = i; j < this.results.length; j++) {
           newResults.push(this.results[j]);
@@ -582,7 +604,8 @@ export class RunEvaluationComponent implements OnInit, OnDestroy {
       }
       const rowError = firstScorerError(scorerResults);
       if (rowError && !this.errorMessage) {
-        this.errorMessage = `Scoring failed for some rows: ${rowError}`;
+        this.errorMessage =
+            this.i18n.t('eval.errScoringFailed', {error: rowError});
       }
       newResults.push({...row, scorerResults});
 

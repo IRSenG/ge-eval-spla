@@ -1,7 +1,27 @@
-<header class="bg-white border-b border-gray-200 p-4 shadow-sm flex justify-between items-center">
-  <h2 class="text-xl font-semibold text-gray-800">{{tabTitle$ | async}}</h2>
-  <button *ngIf="!authService.showCredentialInputs" (click)="logout()" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
-    Log out
-  </button>
+<header class="bg-white border-b border-gray-200 p-4 shadow-sm flex justify-between items-center gap-4">
+  <h2 class="text-xl font-semibold text-gray-800 truncate">{{tabTitle$ | async}}</h2>
+  <div class="flex items-center gap-3 flex-shrink-0">
+    <div class="flex items-center gap-1.5">
+      <svg class="w-4 h-4 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="2" y1="12" x2="22" y2="12"></line>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+      </svg>
+      <select
+        data-test-id="language-selector"
+        [attr.aria-label]="'header.languageAria' | t"
+        [value]="i18n.language()"
+        (change)="onLanguageChange($event)"
+        class="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+      >
+        <option *ngFor="let lang of i18n.languages" [value]="lang.code">
+          {{ lang.label }}
+        </option>
+      </select>
+    </div>
+    <button *ngIf="!authService.showCredentialInputs" (click)="logout()" class="px-4 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+      {{ 'header.logOut' | t }}
+    </button>
+  </div>
 </header>
 

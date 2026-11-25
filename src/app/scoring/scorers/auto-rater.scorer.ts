@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, Optional} from '@angular/core';
 
+import {I18nService} from '../../i18n/i18n.service';
 import {AppConfig} from '../../models/app-config.model';
 import {EvalBackendService} from '../../services/eval-backend.service';
 import {ScoreResult, Scorer, ScoringRequest} from '../scorer';
@@ -114,24 +115,35 @@ export class AutoRaterScorer extends Scorer {
     'autoRaterInstruction',
   ];
 
-  constructor(private readonly evalBackendService: EvalBackendService) {
+  constructor(
+      private readonly evalBackendService: EvalBackendService,
+      @Optional() private readonly i18n?: I18nService
+  ) {
     super();
   }
 
   override validate(config: AppConfig): string|undefined {
     // Report one problem at a time so the user fixes them in order.
     if (!config.autoRaterModel) {
-      return 'Select an auto rater model.';
+      return this.i18n?.t('scoring.errSelectAutoRaterModel') ??
+          'Select an auto rater model.';
     }
     const location = resolveAutoRaterLocation(config);
     if (MULTI_REGIONAL_AUTO_RATER_LOCATIONS.has(location) &&
         !MREP_SUPPORTED_AUTO_RATER_MODELS.has(config.autoRaterModel)) {
-      return `Model '${config.autoRaterModel}' is not available in '${
-          location}'. Select an available model or change Auto Rater Location to 'global'.`;
+      return this.i18n?.t('scoring.errModelNotAvailableInLocation', {
+        model: config.autoRaterModel,
+        location,
+      }) ??
+          `Model '${config.autoRaterModel}' is not available in '${
+              location}'. Select an available model or change Auto Rater Location to 'global'.`;
     }
     const instruction = (config.autoRaterInstruction ?? '').trim();
     if (instruction.length < MIN_AUTO_RATER_INSTRUCTION_LENGTH) {
-      return 'Enter an auto rater instruction of at least ' +
+      return this.i18n?.t('scoring.errInstructionTooShort', {
+        min: MIN_AUTO_RATER_INSTRUCTION_LENGTH,
+      }) ??
+          'Enter an auto rater instruction of at least ' +
           `${MIN_AUTO_RATER_INSTRUCTION_LENGTH} characters.`;
     }
     return undefined;

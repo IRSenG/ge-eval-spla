@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, Optional} from '@angular/core';
 
+import {I18nService} from '../i18n/i18n.service';
 import {AppConfig} from '../models/app-config.model';
 
 import {Scorer} from './scorer';
@@ -35,7 +36,10 @@ import {ScorerRegistry} from './scorer.registry';
  */
 @Injectable({providedIn: 'root'})
 export class ScorerSelection {
-  constructor(private readonly registry: ScorerRegistry) {}
+  constructor(
+      private readonly registry: ScorerRegistry,
+      @Optional() private readonly i18n?: I18nService
+  ) {}
 
   /** Every registered scoring method, in display order. */
   get available(): readonly Scorer[] {
@@ -116,12 +120,16 @@ export class ScorerSelection {
   summarize(config: AppConfig): string {
     const selected = this.selected(config);
     if (selected.length === 0) {
-      return 'No Scorers Selected';
+      return this.i18n?.t('scoring.noScorersSelected') ?? 'No Scorers Selected';
     }
     if (selected.length === 1) {
-      return selected[0].displayName;
+      return this.i18n?.scorerDisplayName(
+                 selected[0].id, selected[0].displayName) ??
+          selected[0].displayName;
     }
-    return `${selected.length} Scorers Selected`;
+    return this.i18n?.t(
+               'scoring.scorersSelectedCount', {count: selected.length}) ??
+        `${selected.length} Scorers Selected`;
   }
 
   /**
@@ -143,7 +151,8 @@ export class ScorerSelection {
   validate(config: AppConfig): string|undefined {
     const selected = this.selected(config);
     if (selected.length === 0) {
-      return 'Select at least one scoring method.';
+      return this.i18n?.t('scoring.errSelectAtLeastOne') ??
+          'Select at least one scoring method.';
     }
     for (const scorer of selected) {
       const error = scorer.validate(config);

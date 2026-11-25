@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-import {Injectable} from '@angular/core';
+import {Injectable, Optional} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {debounceTime, map} from 'rxjs/operators';
 
+import {I18nService} from '../i18n/i18n.service';
+import {EN_TRANSLATIONS} from '../i18n/translations';
 import {AppConfig, Engine} from '../models/app-config.model';
 import {ConnectorOption} from '../models/connector.model';
 import {ResultRow} from '../models/result-row.model';
@@ -34,7 +36,7 @@ export class StateService {
   private readonly STORAGE_KEY = 'ge_eval_studio_config';
   private storageWrite$ = new Subject<any>();
 
-  constructor() {
+  constructor(@Optional() private readonly i18n?: I18nService) {
     // Debounce localStorage writes to prevent I/O blocking during rapid user
     // input
     this.storageWrite$.pipe(debounceTime(300)).subscribe(localConfig => {
@@ -47,7 +49,21 @@ export class StateService {
       }
     });
 
-
+    if (this.i18n) {
+      this.i18n.language$.subscribe(lang => {
+        const current = this.configSubject.value;
+        if (this.i18n!.isDefaultAutoRaterInstruction(
+                current.autoRaterInstruction)) {
+          const localized = this.i18n!.defaultAutoRaterInstruction(lang);
+          if (current.autoRaterInstruction !== localized) {
+            this.configSubject.next({
+              ...current,
+              autoRaterInstruction: localized,
+            });
+          }
+        }
+      });
+    }
   }
 
   private loadInitialConfig(): AppConfig {
@@ -58,7 +74,8 @@ export class StateService {
       selectedModel: '',
       autoRaterModel: '',
       autoRaterInstruction:
-          'You are an expert evaluator. Compare the fetched response (including any cited grounding sources) to the golden response for the given query. Verify that the answer is accurate and supported by valid citations. Calculate an overall score between 0.0 and 1.0 based on correctness and citation grounding.',
+          this.i18n?.defaultAutoRaterInstruction() ??
+          EN_TRANSLATIONS['scoring.defaultAutoRaterInstruction'],
       selectedDataStores: [],
       enableWebSearch: false
     };

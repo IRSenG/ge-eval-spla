@@ -11,7 +11,7 @@
       }"
       class="focus:outline-none transition-colors"
     >
-      1. Configuration
+      {{ 'wizard.step1' | t }}
     </button>
     <div class="text-gray-300">/</div>
     <button
@@ -24,7 +24,7 @@
       }"
       class="focus:outline-none transition-colors"
     >
-      2. Upload & Run
+      {{ 'wizard.step2' | t }}
     </button>
     <div class="text-gray-300">/</div>
     <button
@@ -37,7 +37,7 @@
       }"
       class="focus:outline-none transition-colors"
     >
-      3. Results
+      {{ 'wizard.step3' | t }}
     </button>
   </div>
 
@@ -58,7 +58,7 @@
       (prev)="prevStep()"
       (run)="startResponseGeneration($event)"
       [instruction]="uploadInstruction"
-      [buttonText]="'Run Queries'"
+      [buttonText]="'queries.runButton' | t"
       [requiredColumns]="['query']"
     ></app-file-upload>
   </div>
@@ -67,7 +67,7 @@
   <app-progress-bar
     *ngIf="isProcessingResponse"
     [progress]="responseProgress"
-    [text]="'Generating responses... (' + completedRows + ' / ' + totalRows + ')'"
+    [text]="'queries.progressText' | t:{completed: completedRows, total: totalRows}"
     [canStop]="true"
     (stop)="stopResponseGeneration()"
   ></app-progress-bar>
@@ -77,7 +77,7 @@
     <app-csv-table
       [data]="responseResults"
       [columns]="columns"
-      [title]="'Query Results'"
+      [title]="'queries.resultsTitle' | t"
       [exportFileName]="'query_results'"
       [rowErrorKey]="'errorCode'"
       [rowWarningValues]="['SKIPPED']"
@@ -87,7 +87,7 @@
         (click)="prevStep()"
         class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors font-medium"
       >
-        Back to Upload
+        {{ 'queries.backToUpload' | t }}
       </button>
     </app-csv-table>
   </div>

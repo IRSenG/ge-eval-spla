@@ -8,7 +8,7 @@
       [disabled]="data.length === 0"
       class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-md hover:from-blue-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 transition-colors font-medium"
     >
-      Export CSV
+      {{ 'table.exportCsv' | t }}
     </button>
   </div>
   <div class="border-t border-gray-200 overflow-x-auto">
@@ -65,7 +65,7 @@
                 (click)="toggleExpand(i, col.key)"
                 class="block mt-1 px-1.5 py-0.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {{ isExpanded(i, col.key) ? "Show less" : "Show more" }}
+                {{ isExpanded(i, col.key) ? ('table.showLess' | t) : ('table.showMore' | t) }}
               </button>
             </div>
             <!-- Markdown Type -->
@@ -85,7 +85,7 @@
                 (click)="toggleExpand(i, col.key)"
                 class="block mt-1 px-1.5 py-0.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {{ isExpanded(i, col.key) ? "Show less" : "Show more" }}
+                {{ isExpanded(i, col.key) ? ('table.showLess' | t) : ('table.showMore' | t) }}
               </button>
             </div>
 
@@ -118,7 +118,7 @@
                   (click)="toggleExpand(i, col.key)"
                   class="block mt-1 px-1.5 py-0.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  {{ isExpanded(i, col.key) ? "Show less" : "Show more" }}
+                  {{ isExpanded(i, col.key) ? ('table.showLess' | t) : ('table.showMore' | t) }}
                 </button>
               </ng-container>
               <ng-template #scoreValue>
@@ -134,7 +134,7 @@
                 <span
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                   [ngClass]="deltaLabelBadgeClasses[row[col.key]]"
-                >{{ row[col.key] }}</span>
+                >{{ translateDeltaLabel(row[col.key]) }}</span>
               </ng-container>
               <ng-template #numericDelta>
                 <span [ngClass]="deltaClass(row[col.key])">
@@ -143,12 +143,12 @@
                 <span
                   *ngIf="row[col.key] > 0.1"
                   class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                  >Improvement</span
+                  >{{ 'table.improvement' | t }}</span
                 >
                 <span
                   *ngIf="row[col.key] < -0.1"
                   class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                  >Regression</span
+                  >{{ 'table.regression' | t }}</span
                 >
               </ng-template>
             </div>

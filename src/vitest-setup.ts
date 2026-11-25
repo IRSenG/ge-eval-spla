@@ -61,6 +61,12 @@ if (typeof globalThis !== 'undefined' &&
   }
 }
 
+// Keep legacy unit tests that assert original English copy deterministic.
+// I18n-specific tests clear this key to verify the default ES-LATAM locale.
+if (typeof localStorage !== 'undefined') {
+  localStorage.setItem('ge_eval_studio_lang', 'en');
+}
+
 // --- Part 1: Zone.js Vitest Patch ---
 
 const DESCRIBE_FACTORY_NAMES = [

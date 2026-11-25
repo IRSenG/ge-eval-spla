@@ -25,6 +25,7 @@ import {HeaderComponent} from './components/header/header.component';
 import {RunEvaluationComponent} from './components/run-evaluation/run-evaluation.component';
 import {RunQueriesComponent} from './components/run-queries/run-queries.component';
 import {SidebarComponent} from './components/sidebar/sidebar.component';
+import {TranslatePipe} from './i18n/translate.pipe';
 import {AuthProvider, AuthService} from './services/auth.service';
 import {StateService} from './services/state.service';
 
@@ -36,7 +37,7 @@ import {StateService} from './services/state.service';
   standalone: true,
   imports: [
     CommonModule, SidebarComponent, HeaderComponent, RunEvaluationComponent,
-    CompareEvalsComponent, RunQueriesComponent, AboutComponent
+    CompareEvalsComponent, RunQueriesComponent, AboutComponent, TranslatePipe
   ],
   templateUrl: './app.component.html',
 })

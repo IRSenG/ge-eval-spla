@@ -18,6 +18,8 @@ import {CommonModule} from '@angular/common';
 import {Component} from '@angular/core';
 import {Observable} from 'rxjs';
 
+import {I18nService} from '../../i18n/i18n.service';
+import {TranslatePipe} from '../../i18n/translate.pipe';
 import {StateService} from '../../services/state.service';
 
 /**
@@ -26,7 +28,7 @@ import {StateService} from '../../services/state.service';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './sidebar.component.html'
 })
 export class SidebarComponent {
@@ -34,7 +36,10 @@ export class SidebarComponent {
   currentTab$: Observable<string>;
   isCollapsed = false;
 
-  constructor(private stateService: StateService) {
+  constructor(
+      private stateService: StateService,
+      public readonly i18n: I18nService
+  ) {
     this.currentTab$ = this.stateService.currentTab$;
   }
 

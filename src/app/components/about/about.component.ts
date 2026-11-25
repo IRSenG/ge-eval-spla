@@ -17,6 +17,7 @@
 import {CommonModule} from '@angular/common';
 import {Component} from '@angular/core';
 
+import {TranslatePipe} from '../../i18n/translate.pipe';
 import {AuthService} from '../../services/auth.service';
 
 /**
@@ -25,7 +26,7 @@ import {AuthService} from '../../services/auth.service';
 @Component({
   selector: 'app-about',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   templateUrl: './about.component.html'
 })
 export class AboutComponent {

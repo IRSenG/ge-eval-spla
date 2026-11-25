@@ -21,6 +21,8 @@ import {FormsModule} from '@angular/forms';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 
+import {I18nService} from '../../../i18n/i18n.service';
+import {TranslatePipe} from '../../../i18n/translate.pipe';
 import {Agent, agentDisplayName} from '../../../models/agent.model';
 import {AppConfig, CollectionComponent, ConnectorAuthStateValue, DataStoreComponent, Engine, WidgetConfigResponse} from '../../../models/app-config.model';
 import {ConnectorOption, WEB_SEARCH_CONNECTOR_ID} from '../../../models/connector.model';
@@ -140,6 +142,7 @@ function isAuthorized(component: CollectionComponent): boolean {
     FormsModule,
     InfoTooltipComponent,
     ScoringSetupComponent,
+    TranslatePipe,
   ],
   templateUrl: './config-form.component.html'
 })
@@ -198,6 +201,7 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
       private readonly evalBackendService: EvalBackendService,
       private readonly scorerSelection: ScorerSelection,
       private readonly agentListService: AgentListService,
+      private readonly i18n: I18nService,
   ) {}
 
   /** The agents of the selected engine that can serve a query. */
@@ -220,8 +224,9 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
     if (this.agentList.status !== 'failed') {
       return '';
     }
-    return asSentence(
-        `Could not list agents: ${this.describeError(this.agentList.error)}`);
+    return asSentence(this.i18n.t('config.couldNotListAgents', {
+      error: this.describeError(this.agentList.error),
+    }));
   }
 
   ngOnInit() {
@@ -287,7 +292,7 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.stateService.setErrorMessage('');
     if (!this.config.projectId) {
-      this.errorMessage = 'Please provide Project ID';
+      this.errorMessage = this.i18n.t('config.errProvideProjectId');
       return;
     }
     this.loading = true;
@@ -317,7 +322,7 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
           } else {
             this.engines = [];
             this.stateService.setEngines([]);
-            this.errorMessage = 'No engines found.';
+            this.errorMessage = this.i18n.t('config.errNoEnginesFound');
           }
           this.cdr.detectChanges();
         })
@@ -327,15 +332,16 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
           this.stateService.setEngines([]);
           
           console.error('Error fetching engines:', error);
-          this.errorMessage =
-              `Error fetching engines: ${this.describeError(error)}`;
+          this.errorMessage = this.i18n.t('config.errFetchingEngines', {
+            error: this.describeError(error),
+          });
           this.cdr.detectChanges();
         });
   }
 
   /** Reduces a caught error to the message worth showing the user. */
   private describeError(error: unknown): string {
-    const fallback = 'See console for details.';
+    const fallback = this.i18n.t('config.errSeeConsole');
     if (error instanceof HttpErrorResponse) {
       // The proxy answers some failures with a plain-text body rather than a
       // JSON error.
@@ -445,7 +451,9 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
    */
   agentLabel(agent: Agent): string {
     const name = agentDisplayName(agent);
-    return agent.state === 'SUSPENDED' ? `${name} (suspended)` : name;
+    return agent.state === 'SUSPENDED' ?
+        `${name} ${this.i18n.t('config.agentSuspendedSuffix')}` :
+        name;
   }
 
   /** The agent the run targets, or undefined for the default assistant. */
@@ -693,7 +701,7 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
   connectorIdHint(connector: ConnectorOption): string {
     const id = connectorOverrideId(connector);
     return id == null ?
-        `${CONNECTORS_OVERRIDE_COLUMN}: not available (not authorized)` :
+        `${CONNECTORS_OVERRIDE_COLUMN}: ${this.i18n.t('config.connectorNotAuthorized')}` :
         `${CONNECTORS_OVERRIDE_COLUMN} id: ${id}`;
   }
 
@@ -816,9 +824,11 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
       }
     }
     if (count === 0) {
-      return 'Select Connectors';
+      return this.i18n.t('config.selectConnectors');
     }
-    return `${count} Connector${count > 1 ? 's' : ''} Selected`;
+    return count === 1 ?
+        this.i18n.t('config.connectorsSelectedSingular', {count}) :
+        this.i18n.t('config.connectorsSelectedPlural', {count});
   }
 
   private syncAutoRaterModelsForLocation(): boolean {

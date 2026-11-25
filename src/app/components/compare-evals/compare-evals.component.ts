@@ -15,9 +15,14 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {ChangeDetectorRef, Component} from '@angular/core';
+import {ChangeDetectorRef, Component, OnDestroy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
 
+import {I18nService} from '../../i18n/i18n.service';
+import {TranslatePipe} from '../../i18n/translate.pipe';
+import {TranslationKey} from '../../i18n/translations';
 import {ComparisonResult, SCORE_STATUS_LABELS, STATUS_CHANGE_BADGE_CLASSES, ScoreComparison, ScoreStatusChange} from '../../models/comparison-result.model';
 import {ScoreColumn, findScoreColumns, scoreColumnHeader} from '../../scoring/score-columns';
 import {CsvService} from '../../services/csv.service';
@@ -42,13 +47,15 @@ interface SharedScorer {
 @Component({
   selector: 'app-compare-evals',
   standalone: true,
-  imports: [CommonModule, FormsModule, CsvTableComponent],
+  imports: [CommonModule, FormsModule, CsvTableComponent, TranslatePipe],
   templateUrl: './compare-evals.component.html'
 })
 /**
  * Component for comparing two evaluation results.
  */
-export class CompareEvalsComponent {
+export class CompareEvalsComponent implements OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+  private lastSharedScorers: SharedScorer[] = [];
   baselineFile: File|null = null;
   baselineRows: Array<Record<string, string>> = [];
   baselineScoreColumns: ScoreColumn[] = [];
@@ -75,7 +82,61 @@ export class CompareEvalsComponent {
   readonly statusChangeLabels = SCORE_STATUS_LABELS;
   readonly statusChangeBadgeClasses = STATUS_CHANGE_BADGE_CLASSES;
 
-  constructor(private csvService: CsvService, private cdr: ChangeDetectorRef) {}
+  constructor(
+      private csvService: CsvService,
+      private cdr: ChangeDetectorRef,
+      public readonly i18n: I18nService
+  ) {
+    this.columns = [this.buildQueryColumn()];
+    this.i18n.language$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.rebuildColumns();
+      this.cdr.detectChanges();
+    });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  statusChangeText(statusChange: ScoreStatusChange): string {
+    return this.i18n.t(`compare.status.${statusChange}` as TranslationKey);
+  }
+
+  private buildQueryColumn(): ColumnDef {
+    return {
+      header: this.i18n.t('table.col.query'),
+      exportHeader: 'Query',
+      key: 'query',
+      truncate: true,
+    };
+  }
+
+  private rebuildColumns() {
+    this.columns = [
+      this.buildQueryColumn(),
+      ...this.lastSharedScorers.flatMap((shared, i) => [
+        {
+          header: `${shared.scorer} ${this.i18n.t('table.col.baselineSuffix')}`,
+          exportHeader: `${shared.scorer} Baseline`,
+          key: baselineScoreKey(i),
+          type: 'number' as const
+        },
+        {
+          header: `${shared.scorer} ${this.i18n.t('table.col.recentSuffix')}`,
+          exportHeader: `${shared.scorer} Recent`,
+          key: recentScoreKey(i),
+          type: 'number' as const
+        },
+        {
+          header: `${shared.scorer} ${this.i18n.t('table.col.deltaSuffix')}`,
+          exportHeader: `${shared.scorer} Delta`,
+          key: deltaKey(i),
+          type: 'delta' as const
+        },
+      ]),
+    ];
+  }
 
   /** Prevents default drag behavior to allow drop. */
   onDragOver(event: DragEvent) {
@@ -178,9 +239,10 @@ export class CompareEvalsComponent {
         }
 
         if (missingColumns.length > 0) {
-          const error = `CSV must contain columns: query, fetched and at ` +
-              `least one "${scoreColumnHeader('<scoring method>')}" ` +
-              `column. Missing columns - ${missingColumns.join(', ')}`;
+          const error = this.i18n.t('compare.errMissingColumns', {
+            scoreCol: scoreColumnHeader('<scoring method>'),
+            missing: missingColumns.join(', '),
+          });
           if (type === 'baseline') {
             this.baselineFile = null;
             this.baselineError = error;
@@ -246,30 +308,10 @@ export class CompareEvalsComponent {
     this.compareError = null;
 
     const scorers = this.sharedScorers();
-    this.columns = [
-      QUERY_COLUMN,
-      ...scorers.flatMap((shared, i) => [
-        {
-          header: `${shared.scorer} Baseline`,
-          key: baselineScoreKey(i),
-          type: 'number' as const
-        },
-        {
-          header: `${shared.scorer} Recent`,
-          key: recentScoreKey(i),
-          type: 'number' as const
-        },
-        {
-          header: `${shared.scorer} Delta`,
-          key: deltaKey(i),
-          type: 'delta' as const
-        },
-      ]),
-    ];
+    this.lastSharedScorers = scorers;
+    this.rebuildColumns();
     if (scorers.length === 0) {
-      this.compareError =
-          'The two CSVs share no scoring method, so there is nothing to ' +
-          'compare. Re-run one of them with a common scoring method.';
+      this.compareError = this.i18n.t('compare.errNoSharedScorer');
       this.cdr.detectChanges();
       return;
     }

@@ -17,12 +17,13 @@
 import {CommonModule} from '@angular/common';
 import {ChangeDetectorRef, Component} from '@angular/core';
 
+import {I18nService} from '../../i18n/i18n.service';
+import {TranslatePipe} from '../../i18n/translate.pipe';
 import {CSVRow} from '../../models/csv-row.model';
-import {TRACE_COLUMN_TOOLTIP} from '../../models/result-row.model';
 import {CsvService} from '../../services/csv.service';
 import {EvalService} from '../../services/eval.service';
 import {StateService} from '../../services/state.service';
-import {CONNECTORS_OVERRIDE_COLUMN, CONNECTORS_OVERRIDE_INSTRUCTION, hasConnectorsOverrideColumn} from '../../utils/row-config.util';
+import {CONNECTORS_OVERRIDE_COLUMN, hasConnectorsOverrideColumn} from '../../utils/row-config.util';
 import {ConfigFormComponent} from '../shared/config-form/config-form.component';
 import {ColumnDef, CsvTableComponent} from '../shared/csv-table/csv-table.component';
 import {FileUploadComponent} from '../shared/file-upload/file-upload.component';
@@ -39,40 +40,49 @@ const MAX_CONCURRENT_REQUESTS_FOR_QUERIES = 5;
   standalone: true,
   imports: [
     CommonModule, ConfigFormComponent, FileUploadComponent,
-    CsvTableComponent, ProgressBarComponent
+    CsvTableComponent, ProgressBarComponent, TranslatePipe
   ],
   templateUrl: './run-queries.component.html'
 })
 export class RunQueriesComponent {
   /** Instruction shown on the upload step. */
-  readonly uploadInstruction =
-      `CSV file with at least 'query' column (plus ${
-          CONNECTORS_OVERRIDE_INSTRUCTION})`;
+  get uploadInstruction(): string {
+    return this.i18n.t('queries.uploadInstruction', {
+      connectorsOverride: this.i18n.t('upload.connectorsOverrideInstruction'),
+    });
+  }
   step = 1;
-  private readonly allColumns: ColumnDef[] = [
-    {header: 'Query', key: 'query', truncate: true},
-    {header: 'Response', key: 'response', type: 'markdown', truncate: true}, {
-      header: 'Connectors Used',
-      key: 'connectorsUsed',
-      exportHeader: 'connectors_used',
-      truncate: true
-    },
-    {header: 'TTFT (s)', key: 'ttft', type: 'number'},
-    {header: 'TTFA (s)', key: 'ttfa', type: 'number'},
-    {header: 'TTLT (s)', key: 'ttlt', type: 'number'}, {
-      header: 'Trace',
-      key: 'traceUrl',
-      type: 'link',
-      linkText: 'View Trace',
-      tooltip: TRACE_COLUMN_TOOLTIP,
-      tooltipAlign: 'right'
-    }
-  ];
+
+  private buildAllColumns(): ColumnDef[] {
+    return [
+      {header: this.i18n.t('table.col.query'), exportHeader: 'Query', key: 'query', truncate: true},
+      {header: this.i18n.t('table.col.response'), exportHeader: 'Response', key: 'response', type: 'markdown', truncate: true},
+      {
+        header: this.i18n.t('table.col.connectorsUsed'),
+        key: 'connectorsUsed',
+        exportHeader: 'connectors_used',
+        truncate: true
+      },
+      {header: 'TTFT (s)', exportHeader: 'TTFT (s)', key: 'ttft', type: 'number'},
+      {header: 'TTFA (s)', exportHeader: 'TTFA (s)', key: 'ttfa', type: 'number'},
+      {header: 'TTLT (s)', exportHeader: 'TTLT (s)', key: 'ttlt', type: 'number'},
+      {
+        header: this.i18n.t('table.col.trace'),
+        exportHeader: 'Trace',
+        key: 'traceUrl',
+        type: 'link',
+        linkText: this.i18n.t('table.viewTrace'),
+        tooltip: this.i18n.t('table.traceTooltip'),
+        tooltipAlign: 'right'
+      }
+    ];
+  }
 
   get columns(): ColumnDef[] {
+    const all = this.buildAllColumns();
     return hasConnectorsOverrideColumn(this.responseCsvRows) ?
-        this.allColumns :
-        this.allColumns.filter(c => c.key !== 'connectorsUsed');
+        all :
+        all.filter(c => c.key !== 'connectorsUsed');
   }
 
   responseFile: File|null = null;
@@ -87,7 +97,8 @@ export class RunQueriesComponent {
   constructor(
       private csvService: CsvService, private evalService: EvalService,
       private stateService: StateService,
-      private cdr: ChangeDetectorRef) {}
+      private cdr: ChangeDetectorRef,
+      public readonly i18n: I18nService) {}
 
   isConfigValid(): boolean {
     const config = this.stateService.getCurrentConfig();

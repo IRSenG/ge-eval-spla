@@ -1,10 +1,10 @@
 <div class="space-y-4">
   <div *ngIf="showPicker">
     <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-      ><span>Scoring Methods</span
+      ><span>{{ 'scoring.methods' | t }}</span
       ><app-info-tooltip
         class="inline-flex"
-        text="The strategies used to score each fetched response. Every selected scorer runs against every row, one after another, and gets its own column in the results."
+        [text]="'scoring.methodsTooltip' | t"
       ></app-info-tooltip
     ></label>
     <div
@@ -18,7 +18,7 @@
       >
         <input
           type="checkbox"
-          [attr.aria-label]="s.displayName"
+          [attr.aria-label]="scorerDisplayName(s)"
           [attr.aria-describedby]="checkboxDescribedBy(s, i)"
           [attr.aria-invalid]="selectedScorers.length === 0 ? 'true' : null"
           [checked]="isScorerSelected(s)"
@@ -26,25 +26,25 @@
           class="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
         />
         <div>
-          <div class="text-sm text-gray-700">{{ s.displayName }}</div>
-          <div *ngIf="s.description" [id]="descriptionId(i)" class="text-xs text-gray-500">{{ s.description }}</div>
+          <div class="text-sm text-gray-700">{{ scorerDisplayName(s) }}</div>
+          <div *ngIf="scorerDescription(s)" [id]="descriptionId(i)" class="text-xs text-gray-500">{{ scorerDescription(s) }}</div>
         </div>
       </label>
     </div>
     <div *ngIf="selectedScorers.length > 0" class="mt-1 text-xs text-gray-500">
-      {{ selectionSummary }}. Scorers run in the order listed above.
+      {{ selectionSummary }}. {{ 'scoring.runOrderHint' | t }}
     </div>
   </div>
   <div *ngIf="usesConfigKey('autoRaterLocation')">
     <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-      ><span>Auto Rater Location</span
+      ><span>{{ 'scoring.autoRaterLocation' | t }}</span
       ><app-info-tooltip
         class="inline-flex"
-        text="The Vertex AI location used to call the auto-rater model. Multi-regional locations (us, eu) keep scoring requests in-region and offer a subset of models; choose global for models only served globally."
+        [text]="'scoring.autoRaterLocationTooltip' | t"
       ></app-info-tooltip
     ></label>
     <select
-      aria-label="Auto Rater Location"
+      [attr.aria-label]="'scoring.autoRaterLocation' | t"
       [attr.aria-describedby]="inputDescribedBy('autoRaterLocation')"
       [ngModel]="autoRaterLocation"
       (ngModelChange)="onAutoRaterLocationChange($event)"
@@ -55,14 +55,14 @@
   </div>
   <div *ngIf="usesConfigKey('autoRaterModel')">
     <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-      ><span>Auto Rater Model</span
+      ><span>{{ 'scoring.autoRaterModel' | t }}</span
       ><app-info-tooltip
         class="inline-flex"
-        text="The Gemini model to use for auto-rating."
+        [text]="'scoring.autoRaterModelTooltip' | t"
       ></app-info-tooltip
     ></label>
     <select
-      aria-label="Auto Rater Model"
+      [attr.aria-label]="'scoring.autoRaterModel' | t"
       [attr.aria-describedby]="inputDescribedBy('autoRaterModel')"
       [(ngModel)]="config.autoRaterModel"
       (ngModelChange)="onConfigChange()"
@@ -74,20 +74,20 @@
   </div>
   <div *ngIf="usesConfigKey('autoRaterInstruction')">
     <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-1"
-      ><span>Auto Rater Instruction</span
+      ><span>{{ 'scoring.autoRaterInstruction' | t }}</span
       ><app-info-tooltip
         class="inline-flex"
-        text="Instructions for the Gemini model acting as an auto-rater. Define the rubric or metric for scoring here. The model must output a score between 0.0 and 1.0."
+        [text]="'scoring.autoRaterInstructionTooltip' | t"
       ></app-info-tooltip
     ></label>
     <textarea
-      aria-label="Auto Rater Instruction"
+      [attr.aria-label]="'scoring.autoRaterInstruction' | t"
       [attr.aria-describedby]="inputDescribedBy('autoRaterInstruction')"
       [(ngModel)]="config.autoRaterInstruction"
       (ngModelChange)="onConfigChange()"
       rows="6"
       class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-      placeholder="Enter evaluation instructions..."
+      [placeholder]="'scoring.autoRaterInstructionPlaceholder' | t"
     ></textarea>
   </div>
 </div>

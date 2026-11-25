@@ -15,9 +15,13 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnChanges, Output} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, Input, OnChanges, OnDestroy, Output} from '@angular/core';
 import {FormsModule} from '@angular/forms';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
 
+import {I18nService} from '../../../i18n/i18n.service';
+import {TranslatePipe} from '../../../i18n/translate.pipe';
 import type {AppConfig} from '../../../models/app-config.model';
 import {Scorer} from '../../../scoring/scorer';
 import {ScorerSelection} from '../../../scoring/scorer-selection';
@@ -52,11 +56,12 @@ let nextPanelId = 0;
 @Component({
   selector: 'app-scoring-setup',
   standalone: true,
-  imports: [CommonModule, FormsModule, InfoTooltipComponent],
+  imports: [CommonModule, FormsModule, InfoTooltipComponent, TranslatePipe],
   templateUrl: './scoring-setup.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ScoringSetupComponent implements OnChanges {
+export class ScoringSetupComponent implements OnChanges, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
   /**
    * The configuration to edit in place: a copy the host owns. Pass a new
    * object, rather than mutating this one, to show changes made outside the
@@ -97,9 +102,30 @@ export class ScoringSetupComponent implements OnChanges {
   constructor(
       private readonly selection: ScorerSelection,
       private readonly authService: AuthService,
+      public readonly i18n: I18nService,
+      private readonly cdr: ChangeDetectorRef,
   ) {
     this.autoRaterModels =
         listAutoRaterModels(this.authService.showCredentialInputs);
+    this.i18n.language$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      if (this.config) {
+        this.refresh();
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  scorerDisplayName(scorer: Scorer): string {
+    return this.i18n.scorerDisplayName(scorer.id, scorer.displayName);
+  }
+
+  scorerDescription(scorer: Scorer): string|undefined {
+    return this.i18n.scorerDescription(scorer.id, scorer.description);
   }
 
   /** Every registered scoring method, in display order. */
