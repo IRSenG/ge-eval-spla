@@ -640,7 +640,7 @@ describe('ConfigFormComponent', () => {
       expect(component.config.selectedDataStores).toEqual([]);
     });
 
-    it('should include gemini-2.5-pro and gemini-3.5-flash as fallbacks if they are not in modelConfigs',
+    it('should include fallback models if they are not in modelConfigs',
        () => {
          const fixture = TestBed.createComponent(ConfigFormComponent);
          const component = fixture.componentInstance;
@@ -655,8 +655,9 @@ describe('ConfigFormComponent', () => {
          component.onEngineChange();
 
          expect(component.models).toContain('auto');
-         expect(component.models).toContain('gemini-2.5-pro');
+         expect(component.models).toContain('gemini-3.8-flash');
          expect(component.models).toContain('gemini-3.5-flash');
+         expect(component.models).toContain('gemini-2.5-pro');
        });
 
     it('should not add fallback model if it is in modelConfigs as MODEL_DISABLED',
@@ -822,7 +823,12 @@ describe('ConfigFormComponent', () => {
       const fixture = TestBed.createComponent(ConfigFormComponent);
       const component = fixture.componentInstance;
       expect(component.autoRaterModels).toEqual([
-        'gemini-3.1-pro-preview', 'gemini-3.5-flash'
+        'gemini-4-hydrogen',
+        'gemini-4-argon',
+        'gemini-4-carbon',
+        'gemini-4-neon',
+        'gemini-3.8-flash',
+        'gemini-3.5-flash',
       ]);
     });
 
@@ -833,7 +839,7 @@ describe('ConfigFormComponent', () => {
       // Trigger ngOnInit which subscribes to config$
       fixture.detectChanges();
 
-      expect(component.config.autoRaterModel).toBe('gemini-3.5-flash');
+      expect(component.config.autoRaterModel).toBe('gemini-4-hydrogen');
       expect(mockStateService.setConfig).toHaveBeenCalled();
     });
 
@@ -1377,6 +1383,21 @@ describe('ConfigFormComponent', () => {
   });
 
   describe('auth mode', () => {
+    const expectedFullModels = [
+      'gemini-4-hydrogen',
+      'gemini-4-argon',
+      'gemini-4-carbon',
+      'gemini-4-neon',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+    ];
+    const expectedMrepModels = [
+      'gemini-4-hydrogen',
+      'gemini-4-argon',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+    ];
+
     it('should pre-populate autoRaterModels with WIF models in ngOnInit when showCredentialInputs is false', () => {
       const fixture = TestBed.createComponent(ConfigFormComponent);
       const component = fixture.componentInstance;
@@ -1385,8 +1406,8 @@ describe('ConfigFormComponent', () => {
 
       fixture.detectChanges();
 
-      expect(component.autoRaterModels).toEqual(['gemini-3.5-flash', 'gemini-3.1-pro']);
-      expect(component.config.autoRaterModel).toBe('gemini-3.5-flash');
+      expect(component.autoRaterModels).toEqual(expectedFullModels);
+      expect(component.config.autoRaterModel).toBe('gemini-4-hydrogen');
     });
 
     it('should pre-populate autoRaterModels with default models in ngOnInit when showCredentialInputs is true', () => {
@@ -1397,75 +1418,76 @@ describe('ConfigFormComponent', () => {
 
       fixture.detectChanges();
 
-      expect(component.autoRaterModels).toEqual(['gemini-3.1-pro-preview', 'gemini-3.5-flash']);
-      expect(component.config.autoRaterModel).toBe('gemini-3.1-pro-preview');
+      expect(component.autoRaterModels).toEqual(expectedFullModels);
+      expect(component.config.autoRaterModel).toBe('gemini-4-hydrogen');
     });
-  });
 
-  describe('autoRaterLocation and onRegionChange', () => {
-    it('should sync autoRaterLocation to region and normalize autoRaterModel when region changes to eu',
-       () => {
-         mockAuthService.showCredentialInputs = true;
-         const localFixture = TestBed.createComponent(ConfigFormComponent);
-         const localComponent = localFixture.componentInstance;
-         localFixture.detectChanges();
-         expect(localComponent.config.autoRaterModel)
-             .toBe('gemini-3.1-pro-preview');
+    describe('autoRaterLocation and onRegionChange', () => {
+      it('should sync autoRaterLocation to region and normalize autoRaterModel when region changes to eu',
+         () => {
+           mockAuthService.showCredentialInputs = true;
+           const localFixture = TestBed.createComponent(ConfigFormComponent);
+           const localComponent = localFixture.componentInstance;
+           localFixture.detectChanges();
+           expect(localComponent.config.autoRaterModel)
+               .toBe('gemini-4-hydrogen');
 
-         mockStateService.setConfig.calls.reset();
-         localComponent.config.region = 'eu';
-         localComponent.onRegionChange();
-         localFixture.detectChanges();
+           // Select a global-only model before switching to eu.
+           localComponent.config.autoRaterModel = 'gemini-4-carbon';
+           localComponent.onConfigChange();
 
-         expect(localComponent.config.autoRaterLocation).toBe('eu');
-         expect(localComponent.autoRaterModels).toEqual(['gemini-3.5-flash']);
-         expect(localComponent.config.autoRaterModel).toBe('gemini-3.5-flash');
-         expect(mockStateService.setConfig)
-             .toHaveBeenCalledWith(jasmine.objectContaining({
-               region: 'eu',
-               autoRaterLocation: 'eu',
-               autoRaterModel: 'gemini-3.5-flash',
-             }));
+           mockStateService.setConfig.calls.reset();
+           localComponent.config.region = 'eu';
+           localComponent.onRegionChange();
+           localFixture.detectChanges();
 
-         const modelSelect =
-             (localFixture.nativeElement as HTMLElement)
-                 .querySelector<HTMLSelectElement>(
-                     '[aria-label="Auto Rater Model"]')!;
-         expect(Array.from(modelSelect.options).map(o => o.value)).toEqual([
-           'gemini-3.5-flash'
-         ]);
-       });
+           expect(localComponent.config.autoRaterLocation).toBe('eu');
+           expect(localComponent.autoRaterModels).toEqual(expectedMrepModels);
+           expect(localComponent.config.autoRaterModel).toBe('gemini-4-hydrogen');
+           expect(mockStateService.setConfig)
+               .toHaveBeenCalledWith(jasmine.objectContaining({
+                 region: 'eu',
+                 autoRaterLocation: 'eu',
+                 autoRaterModel: 'gemini-4-hydrogen',
+               }));
 
-    it('should preserve manual autoRaterLocation override when projectId or gCloudToken changes',
-       () => {
-         mockAuthService.showCredentialInputs = true;
-         const localFixture = TestBed.createComponent(ConfigFormComponent);
-         const localComponent = localFixture.componentInstance;
-         localFixture.detectChanges();
+           const modelSelect =
+               (localFixture.nativeElement as HTMLElement)
+                   .querySelector<HTMLSelectElement>(
+                       '[aria-label="Auto Rater Model"]')!;
+           expect(Array.from(modelSelect.options).map(o => o.value))
+               .toEqual(expectedMrepModels);
+         });
 
-         // Switch engine region to eu (autoRaterLocation follows to eu).
-         localComponent.config.region = 'eu';
-         localComponent.onRegionChange();
-         localFixture.detectChanges();
+      it('should preserve manual autoRaterLocation override when projectId or gCloudToken changes',
+         () => {
+           mockAuthService.showCredentialInputs = true;
+           const localFixture = TestBed.createComponent(ConfigFormComponent);
+           const localComponent = localFixture.componentInstance;
+           localFixture.detectChanges();
 
-         // Override autoRaterLocation to global in Scoring Setup and choose pro.
-         localComponent.config.autoRaterLocation = 'global';
-         localComponent.onConfigChange();
-         localComponent.config.autoRaterModel = 'gemini-3.1-pro-preview';
-         localComponent.onConfigChange();
+           // Switch engine region to eu (autoRaterLocation follows to eu).
+           localComponent.config.region = 'eu';
+           localComponent.onRegionChange();
+           localFixture.detectChanges();
 
-         expect(localComponent.autoRaterModels).toEqual([
-           'gemini-3.1-pro-preview', 'gemini-3.5-flash'
-         ]);
+           // Override autoRaterLocation to global in Scoring Setup and choose a global-only model.
+           localComponent.config.autoRaterLocation = 'global';
+           localComponent.onConfigChange();
+           localComponent.config.autoRaterModel = 'gemini-4-carbon';
+           localComponent.onConfigChange();
 
-         // Changing projectId resets engines without overwriting autoRaterLocation.
-         localComponent.config.projectId = 'updated-project';
-         localComponent.changeConfigAndResetEngines();
+           expect(localComponent.autoRaterModels).toEqual(expectedFullModels);
 
-         expect(localComponent.config.region).toBe('eu');
-         expect(localComponent.config.autoRaterLocation).toBe('global');
-         expect(localComponent.config.autoRaterModel)
-             .toBe('gemini-3.1-pro-preview');
-       });
+           // Changing projectId resets engines without overwriting autoRaterLocation.
+           localComponent.config.projectId = 'updated-project';
+           localComponent.changeConfigAndResetEngines();
+
+           expect(localComponent.config.region).toBe('eu');
+           expect(localComponent.config.autoRaterLocation).toBe('global');
+           expect(localComponent.config.autoRaterModel)
+               .toBe('gemini-4-carbon');
+         });
+    });
   });
 });

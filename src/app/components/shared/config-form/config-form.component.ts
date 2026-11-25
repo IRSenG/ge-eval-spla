@@ -371,7 +371,7 @@ export class ConfigFormComponent implements OnInit, OnDestroy {
         }
       }
 
-      const fallbackModels = ['gemini-2.5-pro', 'gemini-3.5-flash'];
+      const fallbackModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-pro'];
       for (const model of fallbackModels) {
         if (!selected.modelConfigs || !(model in selected.modelConfigs)) {
           if (!this.models.includes(model)) {

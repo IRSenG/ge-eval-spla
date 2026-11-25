@@ -89,6 +89,25 @@ describe('AutoRaterScorer', () => {
       expect(await score()).toBe(0.75);
     });
 
+    it('should ignore thought parts and parse the final non-thought score',
+       async () => {
+         respondWith(Promise.resolve(new Response(JSON.stringify({
+           candidates: [{
+             content: {
+               parts: [
+                 {
+                   thought: true,
+                   text: 'Let me think: maybe between 0 and 1 it is 0.2?'
+                 },
+                 {text: '0.95'},
+               ],
+             },
+           }],
+         }))));
+
+         expect(await score()).toBe(0.95);
+       });
+
     it('should parse score with filler before the prefix', async () => {
       respondWith(ratedWith('Here is my evaluation:\nScore: 0.75'));
 
@@ -320,31 +339,44 @@ describe('resolveAutoRaterLocation', () => {
 });
 
 describe('listAutoRaterModels', () => {
-  it('should offer the user credential models when the user supplies a token',
+  const EXPECTED_FULL_MODELS = [
+    'gemini-4-hydrogen',
+    'gemini-4-argon',
+    'gemini-4-carbon',
+    'gemini-4-neon',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+  ];
+  const EXPECTED_MREP_MODELS = [
+    'gemini-4-hydrogen',
+    'gemini-4-argon',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+  ];
+
+  it('should offer the user credential models with gemini-4-hydrogen first when the user supplies a token',
      () => {
-       expect(listAutoRaterModels(true))
-           .toEqual(['gemini-3.1-pro-preview', 'gemini-3.5-flash']);
+       expect(listAutoRaterModels(true)).toEqual(EXPECTED_FULL_MODELS);
      });
 
-  it('should offer the backend models when the backend holds the credentials',
+  it('should offer the backend models with gemini-4-hydrogen first when the backend holds the credentials',
      () => {
-       expect(listAutoRaterModels(false))
-           .toEqual(['gemini-3.5-flash', 'gemini-3.1-pro']);
+       expect(listAutoRaterModels(false)).toEqual(EXPECTED_FULL_MODELS);
      });
 
   it('should filter to mREP-supported models for us and eu locations', () => {
-    expect(listAutoRaterModels(true, 'eu')).toEqual(['gemini-3.5-flash']);
-    expect(listAutoRaterModels(true, 'us')).toEqual(['gemini-3.5-flash']);
-    expect(listAutoRaterModels(false, 'eu')).toEqual(['gemini-3.5-flash']);
-    expect(listAutoRaterModels(false, 'us')).toEqual(['gemini-3.5-flash']);
+    expect(listAutoRaterModels(true, 'eu')).toEqual(EXPECTED_MREP_MODELS);
+    expect(listAutoRaterModels(true, 'us')).toEqual(EXPECTED_MREP_MODELS);
+    expect(listAutoRaterModels(false, 'eu')).toEqual(EXPECTED_MREP_MODELS);
+    expect(listAutoRaterModels(false, 'us')).toEqual(EXPECTED_MREP_MODELS);
   });
 
   it('should offer the full model list for global and single-region locations',
      () => {
        expect(listAutoRaterModels(true, 'global'))
-           .toEqual(['gemini-3.1-pro-preview', 'gemini-3.5-flash']);
+           .toEqual(EXPECTED_FULL_MODELS);
        expect(listAutoRaterModels(false, 'europe-west4'))
-           .toEqual(['gemini-3.5-flash', 'gemini-3.1-pro']);
+           .toEqual(EXPECTED_FULL_MODELS);
      });
 
   it('should return a copy the caller can change', () => {
@@ -352,7 +384,6 @@ describe('listAutoRaterModels', () => {
     listAutoRaterModels(false).length = 0;
 
     expect(listAutoRaterModels(true)).not.toContain('edited');
-    expect(listAutoRaterModels(false))
-        .toEqual(['gemini-3.5-flash', 'gemini-3.1-pro']);
+    expect(listAutoRaterModels(false)).toEqual(EXPECTED_FULL_MODELS);
   });
 });

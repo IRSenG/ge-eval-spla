@@ -31,19 +31,38 @@ const MULTI_REGIONAL_AUTO_RATER_LOCATIONS: ReadonlySet<string> =
     new Set(['us', 'eu']);
 
 /** Models offered when the user supplies their own access token. */
-const MODELS_WITH_USER_CREDENTIALS =
-    ['gemini-3.1-pro-preview', 'gemini-3.5-flash'];
+const MODELS_WITH_USER_CREDENTIALS = [
+  'gemini-4-hydrogen',
+  'gemini-4-argon',
+  'gemini-4-carbon',
+  'gemini-4-neon',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+];
 
 /** Models offered when the backend supplies the credentials. */
-const MODELS_WITH_BACKEND_CREDENTIALS = ['gemini-3.5-flash', 'gemini-3.1-pro'];
+const MODELS_WITH_BACKEND_CREDENTIALS = [
+  'gemini-4-hydrogen',
+  'gemini-4-argon',
+  'gemini-4-carbon',
+  'gemini-4-neon',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+];
 
 /**
  * Gemini models served by Vertex AI Multi-Regional Endpoints (`us`, `eu`).
  * Multi-regional endpoints only serve a subset of Gemini models, so models not
- * in this set (such as `gemini-3.1-pro*`) return 404 there.
+ * in this set return 404 there.
  */
-const MREP_SUPPORTED_AUTO_RATER_MODELS: ReadonlySet<string> =
-    new Set(['gemini-3.5-flash', 'gemini-3.1-flash-lite']);
+const MREP_SUPPORTED_AUTO_RATER_MODELS: ReadonlySet<string> = new Set([
+  'gemini-4-hydrogen',
+  'gemini-4-argon',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+]);
 
 /**
  * Resolves the Vertex AI location used for auto-rater calls, falling back to
@@ -144,7 +163,13 @@ export class AutoRaterScorer extends Scorer {
     }
 
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parts: Array<{text?: string; thought?: boolean}> =
+        data.candidates?.[0]?.content?.parts ?? [];
+    const nonThoughtText = parts
+        .filter(part => !part.thought && typeof part.text === 'string')
+        .map(part => part.text)
+        .join('');
+    const text = nonThoughtText || parts[0]?.text;
     return {score: this.parseScore(text)};
   }
 

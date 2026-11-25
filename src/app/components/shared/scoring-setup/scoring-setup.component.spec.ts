@@ -276,7 +276,12 @@ describe('ScoringSetupComponent', () => {
        expect(fixture.componentInstance.autoRaterLocation).toBe('eu');
        const options =
            Array.from(modelSelect()!.options).map(o => o.value);
-       expect(options).toEqual(['gemini-3.5-flash']);
+       expect(options).toEqual([
+         'gemini-4-hydrogen',
+         'gemini-4-argon',
+         'gemini-3.8-flash',
+         'gemini-3.5-flash',
+       ]);
      });
 
   it('should update autoRaterLocation and reconcile autoRaterModel when changed by the user',
@@ -287,7 +292,7 @@ describe('ScoringSetupComponent', () => {
            {
              region: 'global',
              autoRaterLocation: 'global',
-             autoRaterModel: 'gemini-3.1-pro-preview',
+             autoRaterModel: 'gemini-4-carbon',
            });
        const changes: AppConfig[] = [];
        fixture.componentInstance.configChange.subscribe(
@@ -297,9 +302,12 @@ describe('ScoringSetupComponent', () => {
        fixture.detectChanges();
 
        expect(config.autoRaterLocation).toBe('eu');
-       expect(config.autoRaterModel).toBe('gemini-3.5-flash');
+       expect(config.autoRaterModel).toBe('gemini-4-hydrogen');
        expect(fixture.componentInstance.autoRaterModels).toEqual([
-         'gemini-3.5-flash'
+         'gemini-4-hydrogen',
+         'gemini-4-argon',
+         'gemini-3.8-flash',
+         'gemini-3.5-flash',
        ]);
        expect(changes).toEqual([config]);
      });
